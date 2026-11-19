@@ -1,0 +1,347 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: aws-cloudtrail
+name: AWS CloudTrail
+description: Reads AWS CloudTrail management events (console sign-ins and API calls) into the ASIX data model and watches for root use, sign-ins without MFA, login guessing, logging switched off, IAM privilege changes, access denied bursts and possible public exposure.
+version: 1.0.0
+audience: enterprise
+publisher:
+  name: ASIX
+certification: community
+supported_by: community
+tags:
+  - aws
+  - cloudtrail
+  - cloud
+  - iam
+sources:
+  - "AWS CloudTrail trail delivering to S3: one event per record of the Records list"
+collection:
+  summary: ASIX can read CloudTrail from your S3 bucket itself (Settings, Cloud sources). If you would rather push the records, send each one to the ASIX HTTP ingestion endpoint with anything that can post JSON (a Lambda function on the bucket, Vector, a script).
+  steps:
+    - In AWS, create or reuse a trail (CloudTrail, Trails) that logs management events and delivers to an S3 bucket. Each delivered file is gzip JSON of the form {"Records":[ ... ]}.
+    - In AWS IAM, create a dedicated user whose only permissions are s3:ListBucket on the bucket and s3:GetObject on the CloudTrail folder, and create an access key for it.
+    - In ASIX, open Settings, Integrations and add an "AWS account" with that key.
+    - 'Open Settings, Cloud sources and add "AWS CloudTrail (S3)": choose the account, the bucket, its region, and the folder up to the region (for example AWSLogs/123456789012/CloudTrail/us-east-1/). One source reads one account and region; add one per trail folder you want.'
+    - Install the parsers and rules of this pack here. Parsed events are stored in the dataset aws_cloudtrail. Press Read now on the source, then use Search with dataset = aws_cloudtrail to see events arriving.
+    - 'To push instead of pull: create an ingestion key (it starts with asix_ik_) and post one event per record to POST /v1/ingest/http with the header Authorization: Bearer <key>, as {"message": "<the record as JSON text, unchanged>"}, up to 1000 events per request. ASIX keeps the first 8192 characters of a record.'
+  example: |-
+    curl -X POST https://<your-asix-host>/v1/ingest/http \
+      -H "Authorization: Bearer asix_ik_..." -H "Content-Type: application/json" \
+      -d '[{"message": "{\"eventName\":\"ConsoleLogin\", ... one CloudTrail record ... }"}]'
+parsers:
+  - key: console-login
+    name: CloudTrail console sign-in
+    description: "ConsoleLogin events: who signed in (IAM user, root, federated), from where, whether it worked and whether MFA was used."
+    parsing: |-
+      [INGEST:vendor="amazon", product="cloudtrail", target_dataset="aws_cloudtrail", no_hit=keep, content_id="aws_cloudtrail_console_login"]
+      filter _raw ~= "\"eventName\"\s{0,3}:\s{0,3}\"ConsoleLogin\""
+      | alter
+          event_category = "authentication",
+          _time = arrayindex(regextract(_raw, "\"eventTime\"\s{0,3}:\s{0,3}\"([^\"]{1,40})\""), 0),
+          aws_account = arrayindex(regextract(_raw, "\"recipientAccountId\"\s{0,3}:\s{0,3}\"([^\"]{1,20})\""), 0),
+          aws_region = arrayindex(regextract(_raw, "\"awsRegion\"\s{0,3}:\s{0,3}\"([^\"]{1,30})\""), 0),
+          src_ip = arrayindex(regextract(_raw, "\"sourceIPAddress\"\s{0,3}:\s{0,3}\"([^\"]{1,60})\""), 0),
+          user_agent = arrayindex(regextract(_raw, "\"userAgent\"\s{0,3}:\s{0,3}\"([^\"]{1,150})\""), 0),
+          actor_type = arrayindex(regextract(_raw, "\"type\"\s{0,3}:\s{0,3}\"(Root|IAMUser|AssumedRole|FederatedUser|AWSService|AWSAccount|WebIdentityUser|SAMLUser|Unknown)\""), 0),
+          actor_arn = arrayindex(regextract(_raw, "\"arn\"\s{0,3}:\s{0,3}\"([^\"]{1,200})\""), 0),
+          actor_name = arrayindex(regextract(_raw, "\"userName\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          actor = if(actor_type = "Root", "root", coalesce(actor_name, actor_arn)),
+          login_result = arrayindex(regextract(_raw, "\"ConsoleLogin\"\s{0,3}:\s{0,3}\"(Success|Failure)\""), 0),
+          mfa_used = arrayindex(regextract(_raw, "\"MFAUsed\"\s{0,3}:\s{0,3}\"(Yes|No)\""), 0),
+          error_message = arrayindex(regextract(_raw, "\"errorMessage\"\s{0,3}:\s{0,3}\"([^\"]{1,150})\""), 0);
+    model: |-
+      [MODEL: dataset=aws_cloudtrail]
+      filter _content_id = "aws_cloudtrail_console_login"
+      | alter
+          xdm.event.type = "authentication",
+          xdm.event.original_event_type = "aws-console-login",
+          xdm.event.operation = "ConsoleLogin",
+          xdm.event.outcome = if(login_result = "Success", XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.outcome_reason = error_message,
+          xdm.auth.auth_method = if(mfa_used = "Yes", "mfa", "password"),
+          xdm.event.description = concat("AWS console sign-in ", lowercase(login_result), " for ", actor, " (", actor_type, ", MFA ", mfa_used, ")"),
+          xdm.event.tags = arraycreate(aws_region, actor_type),
+          xdm.source.ipv4 = if(src_ip ~= "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$", src_ip, null),
+          xdm.source.user.username = actor,
+          xdm.observer.name = aws_account;
+    samples:
+      - raw: '{"eventVersion":"1.08","userIdentity":{"type":"IAMUser","principalId":"AIDAEXAMPLE","arn":"arn:aws:iam::123456789012:user/alice","accountId":"123456789012","userName":"alice"},"eventTime":"2026-11-16T10:00:00Z","eventSource":"signin.amazonaws.com","eventName":"ConsoleLogin","awsRegion":"us-east-1","sourceIPAddress":"203.0.113.9","userAgent":"Mozilla/5.0","requestParameters":null,"responseElements":{"ConsoleLogin":"Success"},"additionalEventData":{"LoginTo":"https://console.aws.amazon.com/console/home","MobileVersion":"No","MFAUsed":"No"},"eventType":"AwsConsoleSignIn","recipientAccountId":"123456789012"}'
+        expect:
+          actor: alice
+          actor_type: IAMUser
+          login_result: Success
+          mfa_used: No
+          src_ip: 203.0.113.9
+          aws_region: us-east-1
+          aws_account: "123456789012"
+        xdm:
+          xdm.event.type: authentication
+          xdm.event.outcome: SUCCESS
+          xdm.auth.auth_method: password
+          xdm.source.ipv4: 203.0.113.9
+          xdm.source.user.username: alice
+        fires:
+          - console-login-no-mfa
+      - raw: '{"eventVersion":"1.08","userIdentity":{"type":"IAMUser","principalId":"AIDAEXAMPLE","arn":"arn:aws:iam::123456789012:user/alice","accountId":"123456789012","userName":"alice"},"eventTime":"2026-11-16T10:01:00Z","eventSource":"signin.amazonaws.com","eventName":"ConsoleLogin","awsRegion":"us-east-1","sourceIPAddress":"198.51.100.7","userAgent":"Mozilla/5.0","responseElements":{"ConsoleLogin":"Failure"},"additionalEventData":{"MFAUsed":"No"},"errorMessage":"Failed authentication","eventType":"AwsConsoleSignIn","recipientAccountId":"123456789012"}'
+        expect:
+          login_result: Failure
+          error_message: Failed authentication
+          src_ip: 198.51.100.7
+        xdm:
+          xdm.event.outcome: FAILED
+          xdm.event.outcome_reason: Failed authentication
+        fires:
+          - console-login-failures
+      - raw: '{"eventVersion":"1.08","userIdentity":{"type":"Root","principalId":"123456789012","arn":"arn:aws:iam::123456789012:root","accountId":"123456789012"},"eventTime":"2026-11-16T10:02:00Z","eventSource":"signin.amazonaws.com","eventName":"ConsoleLogin","awsRegion":"us-east-1","sourceIPAddress":"203.0.113.9","responseElements":{"ConsoleLogin":"Success"},"additionalEventData":{"MFAUsed":"Yes"},"eventType":"AwsConsoleSignIn","recipientAccountId":"123456789012"}'
+        expect:
+          actor: root
+          actor_type: Root
+          mfa_used: Yes
+        xdm:
+          xdm.auth.auth_method: mfa
+          xdm.source.user.username: root
+        fires:
+          - root-activity
+  - key: api-call
+    name: CloudTrail API call
+    description: "Every other management event: the service, the action, who did it, from where, and whether it was refused (an error code)."
+    parsing: |-
+      [INGEST:vendor="amazon", product="cloudtrail", target_dataset="aws_cloudtrail", no_hit=keep, content_id="aws_cloudtrail_api"]
+      filter _raw ~= "\"eventSource\"\s{0,3}:\s{0,3}\"[a-z0-9.-]{1,60}amazonaws\.com\"" and not (_raw ~= "\"eventName\"\s{0,3}:\s{0,3}\"ConsoleLogin\"")
+      | alter
+          event_category = "cloud_api",
+          _time = arrayindex(regextract(_raw, "\"eventTime\"\s{0,3}:\s{0,3}\"([^\"]{1,40})\""), 0),
+          aws_account = arrayindex(regextract(_raw, "\"recipientAccountId\"\s{0,3}:\s{0,3}\"([^\"]{1,20})\""), 0),
+          aws_region = arrayindex(regextract(_raw, "\"awsRegion\"\s{0,3}:\s{0,3}\"([^\"]{1,30})\""), 0),
+          src_ip = arrayindex(regextract(_raw, "\"sourceIPAddress\"\s{0,3}:\s{0,3}\"([^\"]{1,60})\""), 0),
+          user_agent = arrayindex(regextract(_raw, "\"userAgent\"\s{0,3}:\s{0,3}\"([^\"]{1,150})\""), 0),
+          actor_type = arrayindex(regextract(_raw, "\"type\"\s{0,3}:\s{0,3}\"(Root|IAMUser|AssumedRole|FederatedUser|AWSService|AWSAccount|WebIdentityUser|SAMLUser|Unknown)\""), 0),
+          actor_arn = arrayindex(regextract(_raw, "\"arn\"\s{0,3}:\s{0,3}\"([^\"]{1,200})\""), 0),
+          actor_name = arrayindex(regextract(_raw, "\"userName\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          actor = if(actor_type = "Root", "root", coalesce(actor_name, actor_arn)),
+          api_service = arrayindex(regextract(_raw, "\"eventSource\"\s{0,3}:\s{0,3}\"([^\"]{1,80})\""), 0),
+          api_name = arrayindex(regextract(_raw, "\"eventName\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          error_code = arrayindex(regextract(_raw, "\"errorCode\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          api_status = if(_raw ~= "\"errorCode\"", "failure", "success"),
+          read_only = arrayindex(regextract(_raw, "\"readOnly\"\s{0,3}:\s{0,3}\"?(true|false)"), 0);
+    model: |-
+      [MODEL: dataset=aws_cloudtrail]
+      filter _content_id = "aws_cloudtrail_api"
+      | alter
+          xdm.event.type = "cloud_api",
+          xdm.event.original_event_type = "aws-api",
+          xdm.event.operation = api_name,
+          xdm.event.outcome = if(api_status = "success", XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.outcome_reason = error_code,
+          xdm.event.description = concat("AWS ", api_service, " ", api_name, " by ", actor, " (", api_status, ")"),
+          xdm.event.tags = arraycreate(aws_region, api_service, actor_type),
+          xdm.source.ipv4 = if(src_ip ~= "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$", src_ip, null),
+          xdm.source.user.username = actor,
+          xdm.target.service.name = api_service,
+          xdm.observer.name = aws_account;
+    samples:
+      - raw: '{"eventVersion":"1.08","userIdentity":{"type":"IAMUser","principalId":"AIDAEXAMPLE","arn":"arn:aws:iam::123456789012:user/alice","accountId":"123456789012","accessKeyId":"AKIAEXAMPLE","userName":"alice"},"eventTime":"2026-11-16T10:03:00Z","eventSource":"iam.amazonaws.com","eventName":"CreateUser","awsRegion":"us-east-1","sourceIPAddress":"203.0.113.9","userAgent":"aws-cli/2.15.0","requestParameters":{"userName":"bob"},"responseElements":{"user":{"userName":"bob"}},"requestID":"abc","eventID":"def","readOnly":false,"eventType":"AwsApiCall","recipientAccountId":"123456789012"}'
+        expect:
+          api_service: iam.amazonaws.com
+          api_name: CreateUser
+          actor: alice
+          api_status: success
+          read_only: "false"
+          src_ip: 203.0.113.9
+        xdm:
+          xdm.event.type: cloud_api
+          xdm.event.operation: CreateUser
+          xdm.event.outcome: SUCCESS
+          xdm.target.service.name: iam.amazonaws.com
+        fires:
+          - iam-privilege-change
+      - raw: '{"eventVersion":"1.08","userIdentity":{"type":"IAMUser","principalId":"AIDAEXAMPLE","arn":"arn:aws:iam::123456789012:user/alice","accountId":"123456789012","accessKeyId":"AKIAEXAMPLE","userName":"alice"},"eventTime":"2026-11-16T10:03:00Z","eventSource":"s3.amazonaws.com","eventName":"ListBuckets","awsRegion":"us-east-1","sourceIPAddress":"203.0.113.9","userAgent":"aws-cli/2.15.0","requestParameters":null,"responseElements":null,"requestID":"abc","eventID":"def","readOnly":true,"eventType":"AwsApiCall","recipientAccountId":"123456789012","errorCode":"AccessDenied","errorMessage":"User is not authorized to perform: s3:ListAllMyBuckets"}'
+        expect:
+          api_name: ListBuckets
+          error_code: AccessDenied
+          api_status: failure
+        xdm:
+          xdm.event.outcome: FAILED
+          xdm.event.outcome_reason: AccessDenied
+        fires:
+          - access-denied-burst
+      - raw: '{"eventVersion":"1.08","userIdentity":{"type":"IAMUser","principalId":"AIDAEXAMPLE","arn":"arn:aws:iam::123456789012:user/alice","accountId":"123456789012","accessKeyId":"AKIAEXAMPLE","userName":"alice"},"eventTime":"2026-11-16T10:03:00Z","eventSource":"cloudtrail.amazonaws.com","eventName":"StopLogging","awsRegion":"us-east-1","sourceIPAddress":"203.0.113.9","userAgent":"aws-cli/2.15.0","requestParameters":{"name":"org-trail"},"responseElements":null,"requestID":"abc","eventID":"def","readOnly":false,"eventType":"AwsApiCall","recipientAccountId":"123456789012"}'
+        expect:
+          api_name: StopLogging
+          api_service: cloudtrail.amazonaws.com
+        xdm:
+          xdm.event.operation: StopLogging
+          xdm.event.outcome: SUCCESS
+        fires:
+          - logging-disabled
+      - raw: '{"eventVersion":"1.08","userIdentity":{"type":"IAMUser","principalId":"AIDAEXAMPLE","arn":"arn:aws:iam::123456789012:user/alice","accountId":"123456789012","accessKeyId":"AKIAEXAMPLE","userName":"alice"},"eventTime":"2026-11-16T10:03:00Z","eventSource":"s3.amazonaws.com","eventName":"PutBucketAcl","awsRegion":"us-east-1","sourceIPAddress":"203.0.113.9","userAgent":"aws-cli/2.15.0","requestParameters":{"bucketName":"my-bucket"},"responseElements":null,"requestID":"abc","eventID":"def","readOnly":false,"eventType":"AwsApiCall","recipientAccountId":"123456789012"}'
+        expect:
+          api_name: PutBucketAcl
+        xdm:
+          xdm.event.operation: PutBucketAcl
+        fires:
+          - possible-public-exposure
+      - raw: '{"eventVersion":"1.08","userIdentity":{"type":"Root","principalId":"123456789012","arn":"arn:aws:iam::123456789012:root","accountId":"123456789012"},"eventTime":"2026-11-16T10:03:00Z","eventSource":"ec2.amazonaws.com","eventName":"DescribeInstances","awsRegion":"us-east-1","sourceIPAddress":"203.0.113.9","userAgent":"aws-cli/2.15.0","requestParameters":null,"responseElements":null,"requestID":"abc","eventID":"def","readOnly":true,"eventType":"AwsApiCall","recipientAccountId":"123456789012"}'
+        expect:
+          actor: root
+          actor_type: Root
+          api_name: DescribeInstances
+        xdm:
+          xdm.source.user.username: root
+        fires:
+          - root-activity
+rules:
+  - key: root-activity
+    name: "AWS: root account used"
+    description: "The AWS account root user signed in or made an API call. The root user should almost never be used: check it was expected and that MFA is on."
+    kind: bioc
+    severity: high
+    category: Privilege Escalation
+    mitre:
+      - T1078.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type in ("aws-api", "aws-console-login") and xdm.source.user.username = "root"
+      group_by: field:xdm.observer.name
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: console-login-no-mfa
+    name: "AWS: console sign-in without MFA"
+    description: Someone signed in to the AWS console with a password only, no second factor.
+    kind: bioc
+    severity: medium
+    category: Initial Access
+    mitre:
+      - T1078.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "aws-console-login" and xdm.event.outcome = "SUCCESS" and xdm.auth.auth_method = "password"
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 240
+  - key: console-login-failures
+    name: "AWS: repeated failed console sign-ins"
+    description: Five or more failed console sign-ins from one address in 10 minutes. Password guessing against AWS accounts.
+    kind: correlation
+    severity: medium
+    category: Credential Access
+    mitre:
+      - T1110
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "aws-console-login" and xdm.event.outcome = "FAILED"
+      group_by: field:xdm.source.ipv4
+      threshold: 5
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: logging-disabled
+    name: "AWS: CloudTrail or GuardDuty logging switched off"
+    description: A trail was stopped, deleted or changed, or a GuardDuty detector was deleted. Attackers do this to hide what they do next.
+    kind: bioc
+    severity: high
+    category: Defense Evasion
+    mitre:
+      - T1562.008
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "aws-api" and xdm.event.outcome = "SUCCESS" and xdm.event.operation in ("StopLogging", "DeleteTrail", "UpdateTrail", "PutEventSelectors", "DeleteDetector", "DisableOrganizationAdminAccount")
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: iam-privilege-change
+    name: "AWS: IAM users, keys or policies changed"
+    description: An IAM user, access key, login profile, group membership or policy was created or changed. Check it was a planned change.
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1098
+      - T1136.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "aws-api" and xdm.event.outcome = "SUCCESS" and xdm.event.operation in ("CreateUser", "CreateAccessKey", "CreateLoginProfile", "UpdateLoginProfile", "AddUserToGroup", "AttachUserPolicy", "AttachRolePolicy", "AttachGroupPolicy", "PutUserPolicy", "PutRolePolicy", "PutGroupPolicy", "CreatePolicyVersion", "SetDefaultPolicyVersion", "UpdateAssumeRolePolicy")
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: access-denied-burst
+    name: "AWS: many refused API calls by one identity"
+    description: One identity had 20 or more API calls refused (access denied, unauthorized) in 10 minutes. Often someone with stolen keys finding out what they can do.
+    kind: correlation
+    severity: medium
+    category: Discovery
+    mitre:
+      - T1580
+      - T1087.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "aws-api" and xdm.event.outcome = "FAILED" and xdm.event.outcome_reason ~= "(AccessDenied|UnauthorizedOperation|Client.UnauthorizedOperation)"
+      group_by: field:xdm.source.user.username
+      threshold: 20
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: possible-public-exposure
+    name: "AWS: storage or network exposure changed"
+    description: A bucket policy or ACL changed, the public access block was removed, a security group opened an inbound rule, or a snapshot or image was shared. Check it did not make anything public.
+    kind: bioc
+    severity: medium
+    category: Exfiltration
+    mitre:
+      - T1530
+      - T1537
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "aws-api" and xdm.event.outcome = "SUCCESS" and xdm.event.operation in ("PutBucketAcl", "PutBucketPolicy", "DeletePublicAccessBlock", "PutBucketPublicAccessBlock", "AuthorizeSecurityGroupIngress", "ModifySnapshotAttribute", "ModifyImageAttribute")
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+history:
+  - version: 1.0.0
+    released: 2026-11-16
+    notes: "First release: console sign-in and API parsers, data model mapping, seven detections."

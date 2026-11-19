@@ -1,0 +1,249 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: fortinet-fortigate
+name: Fortinet FortiGate firewall
+description: Reads FortiGate syslog (forward traffic, administrator logins, IPS detections) into the ASIX data model and watches for admin password guessing, blocked critical attacks and deny floods.
+version: 1.0.0
+audience: enterprise
+publisher:
+  name: ASIX
+certification: community
+supported_by: community
+tags:
+  - fortinet
+  - fortigate
+  - firewall
+  - network
+sources:
+  - FortiGate syslog in the default key=value format (config log syslogd setting; traffic, event and utm logs)
+parsers:
+  - key: traffic
+    name: FortiGate traffic log
+    description: "Connections through the firewall: source, destination, interfaces, policy, service, protocol and action."
+    parsing: |-
+      [INGEST:vendor="fortinet", product="fortigate", no_hit=keep, content_id="fortinet_fortigate_traffic"]
+      filter _raw ~= " type=\"traffic\""
+      | alter
+          event_category = "network_connection",
+          src_ip = arrayindex(regextract(_raw, "[ ]srcip=([0-9a-fA-F:.]{2,45})"), 0),
+          src_port = to_integer(arrayindex(regextract(_raw, "[ ]srcport=([0-9]{1,5})"), 0)),
+          dest_ip = arrayindex(regextract(_raw, "[ ]dstip=([0-9a-fA-F:.]{2,45})"), 0),
+          dest_port = to_integer(arrayindex(regextract(_raw, "[ ]dstport=([0-9]{1,5})"), 0)),
+          fgt_proto = arrayindex(regextract(_raw, "[ ]proto=([0-9]{1,3})"), 0),
+          protocol = if(fgt_proto = "6", "tcp", fgt_proto = "17", "udp", fgt_proto = "1", "icmp", fgt_proto),
+          fgt_action = arrayindex(regextract(_raw, "[ ]action=\"([^\"]{1,30})\""), 0),
+          fgt_policy = arrayindex(regextract(_raw, "[ ]policyid=([0-9]{1,10})"), 0),
+          fgt_service = arrayindex(regextract(_raw, "[ ]service=\"([^\"]{1,60})\""), 0),
+          src_intf = arrayindex(regextract(_raw, "[ ]srcintf=\"([^\"]{1,60})\""), 0),
+          dest_intf = arrayindex(regextract(_raw, "[ ]dstintf=\"([^\"]{1,60})\""), 0),
+          fgt_device = arrayindex(regextract(_raw, "[ ]devname=\"([^\"]{1,60})\""), 0);
+    model: |-
+      [MODEL: dataset=syslog]
+      filter _content_id = "fortinet_fortigate_traffic"
+      | alter
+          xdm.event.type = "network_connection",
+          xdm.event.original_event_type = "fortigate-traffic",
+          xdm.event.operation = fgt_action,
+          xdm.event.outcome = if(fgt_action in ("accept", "allow", "close", "start", "client-rst", "server-rst", "timeout"), XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.description = concat("FortiGate ", fgt_action, " ", protocol, " ", src_ip, " to ", dest_ip, ":", to_string(dest_port), " (", fgt_service, ", policy ", fgt_policy, ")"),
+          xdm.event.tags = arraycreate(fgt_service, src_intf, dest_intf),
+          xdm.source.ipv4 = if(src_ip contains ":", null, src_ip),
+          xdm.source.ipv6 = if(src_ip contains ":", src_ip, null),
+          xdm.source.port = src_port,
+          xdm.target.ipv4 = if(dest_ip contains ":", null, dest_ip),
+          xdm.target.ipv6 = if(dest_ip contains ":", dest_ip, null),
+          xdm.target.port = dest_port,
+          xdm.network.ip_protocol = protocol,
+          xdm.observer.name = fgt_device;
+    samples:
+      - raw: <189>date=2026-11-16 time=10:00:00 devname="FGT-01" devid="FGT60E4Q16000000" logid="0000000013" type="traffic" subtype="forward" level="notice" vd="root" srcip=203.0.113.9 srcport=51234 srcintf="wan1" dstip=10.1.1.10 dstport=443 dstintf="lan" policyid=12 proto=6 action="accept" service="HTTPS" sentbyte=5234 rcvdbyte=1203
+        expect:
+          src_ip: 203.0.113.9
+          src_port: 51234
+          dest_ip: 10.1.1.10
+          dest_port: 443
+          protocol: tcp
+          fgt_action: accept
+          fgt_policy: "12"
+          fgt_service: HTTPS
+          src_intf: wan1
+          dest_intf: lan
+          fgt_device: FGT-01
+        xdm:
+          xdm.source.ipv4: 203.0.113.9
+          xdm.target.port: 443
+          xdm.event.outcome: SUCCESS
+          xdm.network.ip_protocol: tcp
+          xdm.observer.name: FGT-01
+      - raw: <189>date=2026-11-16 time=10:00:05 devname="FGT-01" devid="FGT60E4Q16000000" logid="0000000013" type="traffic" subtype="forward" level="warning" vd="root" srcip=198.51.100.7 srcport=40022 srcintf="wan1" dstip=10.1.1.20 dstport=3389 dstintf="lan" policyid=0 proto=6 action="deny" service="RDP"
+        expect:
+          fgt_action: deny
+          dest_port: 3389
+          fgt_service: RDP
+        xdm:
+          xdm.event.outcome: FAILED
+          xdm.event.original_event_type: fortigate-traffic
+        fires:
+          - deny-flood
+  - key: admin-login
+    name: FortiGate administrator login
+    description: Logins to the FortiGate web interface or SSH, successful or failed, with the account, the client address and the reason.
+    parsing: |-
+      [INGEST:vendor="fortinet", product="fortigate", no_hit=keep, content_id="fortinet_fortigate_admin_login"]
+      filter _raw ~= " type=\"event\"" and _raw ~= " action=\"login\""
+      | alter
+          event_category = "authentication",
+          user = arrayindex(regextract(_raw, "[ ]user=\"([^\"]{1,100})\""), 0),
+          fgt_status = arrayindex(regextract(_raw, "[ ]status=\"([^\"]{1,20})\""), 0),
+          event_outcome = if(fgt_status = "success", "success", "failure"),
+          reason = arrayindex(regextract(_raw, "[ ]reason=\"([^\"]{1,60})\""), 0),
+          src_ip = coalesce(arrayindex(regextract(_raw, "[ ]srcip=([0-9a-fA-F:.]{2,45})"), 0), arrayindex(regextract(_raw, " ui=\"[a-z]{3,10}\\(([0-9a-fA-F:.]{2,45})\\)\""), 0)),
+          fgt_device = arrayindex(regextract(_raw, "[ ]devname=\"([^\"]{1,60})\""), 0);
+    model: |-
+      [MODEL: dataset=syslog]
+      filter _content_id = "fortinet_fortigate_admin_login"
+      | alter
+          xdm.event.type = "authentication",
+          xdm.event.original_event_type = "fortigate-login",
+          xdm.event.outcome = if(event_outcome = "success", XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.outcome_reason = reason,
+          xdm.event.description = concat("FortiGate administrator login ", event_outcome, " for ", user),
+          xdm.target.user.username = user,
+          xdm.source.ipv4 = if(src_ip contains ":", null, src_ip),
+          xdm.source.ipv6 = if(src_ip contains ":", src_ip, null),
+          xdm.observer.name = fgt_device;
+    samples:
+      - raw: <188>date=2026-11-16 time=10:01:00 devname="FGT-01" devid="FGT60E4Q16000000" logid="0100032002" type="event" subtype="system" level="alert" vd="root" logdesc="Admin login failed" sn="0" user="admin" ui="https(203.0.113.9)" method="https" srcip=203.0.113.9 dstip=10.1.1.1 action="login" status="failed" reason="passwd_invalid" msg="Administrator admin login failed from https(203.0.113.9) because of invalid password"
+        expect:
+          user: admin
+          fgt_status: failed
+          event_outcome: failure
+          reason: passwd_invalid
+          src_ip: 203.0.113.9
+        xdm:
+          xdm.event.type: authentication
+          xdm.event.outcome: FAILED
+          xdm.target.user.username: admin
+          xdm.source.ipv4: 203.0.113.9
+          xdm.event.original_event_type: fortigate-login
+        fires:
+          - admin-login-guessing
+      - raw: <189>date=2026-11-16 time=10:02:00 devname="FGT-01" devid="FGT60E4Q16000000" logid="0100032001" type="event" subtype="system" level="information" vd="root" logdesc="Admin login successful" user="admin" ui="https(10.1.1.50)" method="https" srcip=10.1.1.50 dstip=10.1.1.1 action="login" status="success" reason="none" msg="Administrator admin logged in successfully from https(10.1.1.50)"
+        expect:
+          event_outcome: success
+          src_ip: 10.1.1.50
+        xdm:
+          xdm.event.outcome: SUCCESS
+  - key: ips
+    name: FortiGate IPS detection
+    description: "Intrusion prevention signatures that fired: attack name, severity, action taken, source and destination."
+    parsing: |-
+      [INGEST:vendor="fortinet", product="fortigate", no_hit=keep, content_id="fortinet_fortigate_ips"]
+      filter _raw ~= " type=\"utm\"" and _raw ~= " subtype=\"(ips|anomaly)\""
+      | alter
+          event_category = "threat",
+          src_ip = arrayindex(regextract(_raw, "[ ]srcip=([0-9a-fA-F:.]{2,45})"), 0),
+          src_port = to_integer(arrayindex(regextract(_raw, "[ ]srcport=([0-9]{1,5})"), 0)),
+          dest_ip = arrayindex(regextract(_raw, "[ ]dstip=([0-9a-fA-F:.]{2,45})"), 0),
+          dest_port = to_integer(arrayindex(regextract(_raw, "[ ]dstport=([0-9]{1,5})"), 0)),
+          attack_name = arrayindex(regextract(_raw, "[ ]attack=\"([^\"]{1,150})\""), 0),
+          threat_severity = arrayindex(regextract(_raw, "[ ]severity=\"([^\"]{1,12})\""), 0),
+          fgt_action = arrayindex(regextract(_raw, "[ ]action=\"([^\"]{1,30})\""), 0),
+          fgt_device = arrayindex(regextract(_raw, "[ ]devname=\"([^\"]{1,60})\""), 0);
+    model: |-
+      [MODEL: dataset=syslog]
+      filter _content_id = "fortinet_fortigate_ips"
+      | alter
+          xdm.event.type = "network_connection",
+          xdm.event.original_event_type = "fortigate-ips",
+          xdm.event.operation = fgt_action,
+          xdm.event.outcome = if(fgt_action in ("dropped", "blocked", "reset", "clear_session", "pass_session"), XDM_CONST.OUTCOME_FAILED, XDM_CONST.OUTCOME_SUCCESS),
+          xdm.event.description = concat("FortiGate IPS ", attack_name, " (", threat_severity, ", ", fgt_action, ")"),
+          xdm.event.tags = arraycreate(threat_severity, attack_name),
+          xdm.source.ipv4 = src_ip,
+          xdm.source.port = src_port,
+          xdm.target.ipv4 = dest_ip,
+          xdm.target.port = dest_port,
+          xdm.observer.name = fgt_device;
+    samples:
+      - raw: <188>date=2026-11-16 time=10:03:00 devname="FGT-01" devid="FGT60E4Q16000000" logid="0419016384" type="utm" subtype="ips" eventtype="signature" level="alert" vd="root" severity="critical" srcip=203.0.113.9 srcport=51240 dstip=10.1.1.10 dstport=80 proto=6 action="dropped" attack="Apache.Log4j.Error.Log.Remote.Code.Execution" direction="incoming"
+        expect:
+          attack_name: Apache.Log4j.Error.Log.Remote.Code.Execution
+          threat_severity: critical
+          fgt_action: dropped
+          src_ip: 203.0.113.9
+          dest_ip: 10.1.1.10
+          dest_port: 80
+        xdm:
+          xdm.event.original_event_type: fortigate-ips
+          xdm.event.outcome: FAILED
+          xdm.target.ipv4: 10.1.1.10
+        fires:
+          - ips-critical
+rules:
+  - key: admin-login-guessing
+    name: "FortiGate: repeated failed administrator logins"
+    description: Three or more failed administrator logins from one address in 10 minutes. Password guessing against the firewall management interface.
+    kind: correlation
+    severity: high
+    category: Credential Access
+    mitre:
+      - T1110
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "fortigate-login" and xdm.event.outcome = "FAILED"
+      group_by: field:xdm.source.ipv4
+      threshold: 3
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: ips-critical
+    name: "FortiGate: critical or high IPS detection"
+    description: The IPS fired on a critical or high severity signature. Read the attack name in the alert and check whether the target was patched.
+    kind: bioc
+    severity: high
+    category: Initial Access
+    mitre:
+      - T1190
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "fortigate-ips" and xdm.event.description ~= "\\((critical|high),"
+      group_by: field:xdm.source.ipv4
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: deny-flood
+    name: "FortiGate: many denied connections from one address"
+    description: One source had 100 or more connections denied in 5 minutes. Often a scan.
+    kind: correlation
+    severity: medium
+    category: Discovery
+    mitre:
+      - T1046
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "fortigate-traffic" and xdm.event.outcome = "FAILED"
+      group_by: field:xdm.source.ipv4
+      threshold: 100
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 1.0.0
+    released: 2026-11-16
+    notes: "First release: traffic, admin login and IPS parsers, data model mapping, three detections."

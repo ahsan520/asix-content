@@ -1,0 +1,4 @@
+*.pem
+index.json
+index.sig.json
+node_modules/

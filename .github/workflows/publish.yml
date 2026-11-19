@@ -1,0 +1,50 @@
+name: publish-feed
+
+# Checks every pack on each pull request. On a push to main it also builds index.json, signs it and publishes packs/, index.json and index.sig.json
+# to the branch "feed". The ASIX feed address is then https://raw.githubusercontent.com/<owner>/<repo>/feed/
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The checks and the signing tool live in the ASIX repository (scripts/pack-tool.js). Change the repository name; if it is private,
+      # add a read-only token as the secret ASIX_REPO_TOKEN.
+      - uses: actions/checkout@v4
+        with:
+          repository: ahsan520/ash-app-builder
+          token: ${{ secrets.ASIX_REPO_TOKEN || github.token }}
+          path: asix
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --omit=dev
+        working-directory: asix
+      - name: Check every pack file and every parser sample
+        run: node asix/scripts/pack-tool.js check .
+      - name: Build, sign and publish the feed
+        if: github.event_name == 'push'
+        env:
+          PACKS_SIGNING_KEY: ${{ secrets.PACKS_SIGNING_KEY }}   # the private key, PEM text
+          PACKS_KEY_ID: ${{ vars.PACKS_KEY_ID }}                # for example asix-content-1
+        run: |
+          set -euo pipefail
+          test -n "$PACKS_SIGNING_KEY" && test -n "$PACKS_KEY_ID"
+          node asix/scripts/pack-tool.js index . asix-content
+          umask 077; printf '%s\n' "$PACKS_SIGNING_KEY" > "$RUNNER_TEMP/key.pem"
+          node asix/scripts/pack-tool.js sign . "$RUNNER_TEMP/key.pem" "$PACKS_KEY_ID"
+          # the same check ASIX makes: fails when the key is not built into the ASIX checkout above
+          node asix/scripts/pack-tool.js verify .
+          rm -rf "$RUNNER_TEMP/feed" && mkdir "$RUNNER_TEMP/feed"
+          cp -r packs index.json index.sig.json "$RUNNER_TEMP/feed/"
+          cd "$RUNNER_TEMP/feed"
+          git init -q -b feed && git config user.name "asix-content" && git config user.email "asix-content@users.noreply.github.com"
+          git add -A && git commit -q -m "Feed built from ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" feed
