@@ -36,7 +36,8 @@ jobs:
           PACKS_KEY_ID: ${{ vars.PACKS_KEY_ID }}                # for example asix-content-1
         run: |
           set -euo pipefail
-          test -n "$PACKS_SIGNING_KEY" && test -n "$PACKS_KEY_ID"
+          [ -n "$PACKS_SIGNING_KEY" ] || { echo "::error::Secret PACKS_SIGNING_KEY is empty or not set (Settings > Secrets and variables > Actions > Secrets)"; exit 1; }
+          [ -n "$PACKS_KEY_ID" ] || { echo "::error::Variable PACKS_KEY_ID is empty or not set (Settings > Secrets and variables > Actions > Variables)"; exit 1; }
           node asix/scripts/pack-tool.js index . asix-content
           umask 077; printf '%s\n' "$PACKS_SIGNING_KEY" > "$RUNNER_TEMP/key.pem"
           node asix/scripts/pack-tool.js sign . "$RUNNER_TEMP/key.pem" "$PACKS_KEY_ID"
