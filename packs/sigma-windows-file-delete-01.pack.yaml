@@ -1,0 +1,234 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: sigma-windows-file-delete-01
+name: "Sigma: Windows file delete"
+description: "10 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows file delete events, grouped by tactic, starting with file_delete. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires."
+version: 2026.1118.0
+audience: enterprise
+publisher:
+  name: SigmaHQ community, converted for ASIX
+  url: https://github.com/SigmaHQ/sigma
+certification: community
+supported_by: community
+rules_start_off: true
+tags:
+  - sigma
+  - windows
+  - file-delete
+license: DRL-1.1
+sources:
+  - Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 23 and 26)
+rules:
+  - key: ads-zone-identifier-deleted-by-uncommo-3109530e
+    name: ADS Zone.Identifier Deleted By Uncommon Application
+    description: 'Detects the deletion of the "Zone.Identifier" ADS by an uncommon process. Attackers can leverage this in order to bypass security restrictions that make use of the ADS such as Microsoft Office apps. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 23 and 26). Known false positives: Other third party applications not listed.. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3109530e-ab47-4cc6-a953-cac5ebcc93ae. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_delete/file_delete_win_zone_identifier_ads_uncommon.yml'
+    kind: bioc
+    severity: medium
+    category: file_delete
+    mitre:
+      - T1070.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_deleted" and (xdm.target.file.path ~= ":Zone\\.Identifier$" and not (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\PowerShell\\\\7-preview\\\\pwsh\\.exe|C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh\\.exe|C:\\\\Windows\\\\explorer\\.exe|C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1\\.0\\\\powershell\\.exe|C:\\\\Windows\\\\SysWOW64\\\\explorer\\.exe|C:\\\\Windows\\\\SysWOW64\\\\WindowsPowerShell\\\\v1\\.0\\\\powershell\\.exe)$") and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe|C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Mozilla Firefox\\\\firefox\\.exe|C:\\\\Program Files\\\\Mozilla Firefox\\\\firefox\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe|C:\\\\Program Files\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: eventlog-evtx-file-deleted-63c779ba
+    name: EventLog EVTX File Deleted
+    description: "Detects the deletion of the event log files which may indicate an attempt to destroy forensic evidence Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 23 and 26). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 63c779ba-f638-40a0-a593-ddd45e8b1ddc. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_delete/file_delete_win_delete_event_log_files.yml"
+    kind: bioc
+    severity: medium
+    category: file_delete
+    mitre:
+      - T1070
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_deleted" and (xdm.target.file.path ~= "^C:\\\\Windows\\\\System32\\\\winevt\\\\Logs\\\\" and xdm.target.file.path ~= "\\.evtx$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: exchange-powershell-cmdlet-history-del-a55349d8
+    name: Exchange PowerShell Cmdlet History Deleted
+    description: "Detects the deletion of the Exchange PowerShell cmdlet History logs which may indicate an attempt to destroy forensic evidence Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 23 and 26). Known false positives: Possible FP during log rotation. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a55349d8-9588-4c5a-8e3b-1925fe2a4ffe. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_delete/file_delete_win_delete_exchange_powershell_logs.yml"
+    kind: bioc
+    severity: high
+    category: file_delete
+    mitre:
+      - T1070
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_deleted" and (xdm.target.file.path ~= "\\\\Logging\\\\CmdletInfra\\\\LocalPowerShell\\\\Cmdlet\\\\" and xdm.target.file.path ~= "_Cmdlet_")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: file-deleted-via-sysinternals-sdelete-6ddab845
+    name: File Deleted Via Sysinternals SDelete
+    description: "Detects the deletion of files by the Sysinternals SDelete utility. It looks for the common name pattern used to rename files. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 23 and 26). Known false positives: Legitimate usage. Sigma rule by Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 6ddab845-b1b8-49c2-bbf7-1a11967f64bc. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_delete/file_delete_win_sysinternals_sdelete_file_deletion.yml"
+    kind: bioc
+    severity: medium
+    category: file_delete
+    mitre:
+      - T1070.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_deleted" and (xdm.target.file.path ~= "(?:\\.AAA|\\.ZZZ)$" and not (xdm.target.file.path ~= "\\\\Wireshark\\\\radius\\\\dictionary\\.alcatel-lucent\\.aaa$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: iis-webserver-access-logs-deleted-3eb8c339
+    name: IIS WebServer Access Logs Deleted
+    description: "Detects the deletion of IIS WebServer access logs which may indicate an attempt to destroy forensic evidence Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 23 and 26). Known false positives: During uninstallation of the IIS service; During log rotation. Sigma rule by Tim Rauch (Nextron Systems), Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3eb8c339-a765-48cc-a150-4364c04652bf. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_delete/file_delete_win_delete_iis_access_logs.yml"
+    kind: bioc
+    severity: medium
+    category: file_delete
+    mitre:
+      - T1070
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_deleted" and (xdm.target.file.path contains "\\inetpub\\logs\\LogFiles\\" and xdm.target.file.path ~= "\\.log$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: powershell-console-history-logs-delete-ff301988
+    name: PowerShell Console History Logs Deleted
+    description: "Detects the deletion of the PowerShell console History logs which may indicate an attempt to destroy forensic evidence Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 23 and 26). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ff301988-c231-4bd0-834c-ac9d73b86586. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_delete/file_delete_win_delete_powershell_command_history.yml"
+    kind: bioc
+    severity: medium
+    category: file_delete
+    mitre:
+      - T1070
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_deleted" and xdm.target.file.path ~= "\\\\PSReadLine\\\\ConsoleHost_history\\.txt$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: teamviewer-log-file-deleted-b1decb61
+    name: TeamViewer Log File Deleted
+    description: "Detects the deletion of the TeamViewer log files which may indicate an attempt to destroy forensic evidence Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 23 and 26). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b1decb61-ed83-4339-8e95-53ea51901720. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_delete/file_delete_win_delete_teamviewer_logs.yml"
+    kind: bioc
+    severity: low
+    category: file_delete
+    mitre:
+      - T1070.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_deleted" and ((xdm.target.file.path contains "\\TeamViewer_" and xdm.target.file.path ~= "\\.log$") and not (xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\system32\\\\svchost\\.exe$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: tomcat-webserver-logs-deleted-270185ff
+    name: Tomcat WebServer Logs Deleted
+    description: "Detects the deletion of tomcat WebServer logs which may indicate an attempt to destroy forensic evidence Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 23 and 26). Known false positives: During uninstallation of the tomcat server; During log rotation. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 270185ff-5f50-4d6d-a27f-24c3b8c9fef8. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_delete/file_delete_win_delete_tomcat_logs.yml"
+    kind: bioc
+    severity: medium
+    category: file_delete
+    mitre:
+      - T1070
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_deleted" and ((xdm.target.file.path ~= "\\\\Tomcat" and xdm.target.file.path ~= "\\\\logs\\\\") and xdm.target.file.path ~= "(?:catalina\\.|_access_log\\.|localhost\\.)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: backup-files-deleted-06125661
+    name: Backup Files Deleted
+    description: "Detects deletion of files with extensions often used for backup files. Adversaries may delete or remove built-in operating system data and turn off services designed to aid in the recovery of a corrupted system to prevent recovery. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 23 and 26). Known false positives: Legitimate usage. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 06125661-3814-4e03-bfa2-1e4411c60ac3. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_delete/file_delete_win_delete_backup_file.yml"
+    kind: bioc
+    severity: medium
+    category: Impact
+    mitre:
+      - T1490
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_deleted" and (xdm.source.process.executable.path ~= "(?:\\\\cmd\\.exe|\\\\powershell\\.exe|\\\\pwsh\\.exe|\\\\wt\\.exe|\\\\rundll32\\.exe|\\\\regsvr32\\.exe)$" and xdm.target.file.path ~= "(?:\\.VHD|\\.bac|\\.bak|\\.wbcat|\\.bkf|\\.set|\\.win|\\.dsk)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: unusual-file-deletion-by-dns-exe-8f0b1fb1
+    name: Unusual File Deletion by Dns.exe
+    description: "Detects an unexpected file being deleted by dns.exe which my indicate activity related to remote code execution or other forms of exploitation as seen in CVE-2020-1350 (SigRed) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 23 and 26). Known false positives: Unknown. Sigma rule by Tim Rauch (Nextron Systems), Elastic (idea), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8f0b1fb1-9bd4-4e74-8cdf-a8de4d2adfd0. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_delete/file_delete_win_unusual_deletion_by_dns_exe.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1133
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_deleted" and (xdm.source.process.executable.path ~= "\\\\dns\\.exe$" and not (xdm.target.file.path ~= "\\\\dns\\.log$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 2026.1118.0
+    released: 2026-11-18
+    notes: Converted from the SigmaHQ rules at 698f0912f571d5fac3bf8c51f5421139834a011c.

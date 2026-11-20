@@ -1,0 +1,1119 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: sigma-windows-registry-set-01
+name: "Sigma: Windows registry set (1 of 4)"
+description: "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows registry set events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires."
+version: 2026.1118.0
+audience: enterprise
+publisher:
+  name: SigmaHQ community, converted for ASIX
+  url: https://github.com/SigmaHQ/sigma
+certification: community
+supported_by: community
+rules_start_off: true
+tags:
+  - sigma
+  - windows
+  - registry-set
+license: DRL-1.1
+sources:
+  - Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13)
+rules:
+  - key: periodic-backup-for-system-registry-hi-973ef012
+    name: Periodic Backup For System Registry Hives Enabled
+    description: |-
+      Detects the enabling of the "EnablePeriodicBackup" registry value. Once enabled, The OS will backup System registry hives on restarts to the "C:\Windows\System32\config\RegBack" folder. Windows creates a "RegIdleBackup" task to manage subsequent backups.
+      Registry backup was a default behavior on Windows and was disabled as of "Windows 10, version 1803". Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate need for RegBack feature by administrators.. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 973ef012-8f1a-4c40-93b4-7e659a5cd17f. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_enable_periodic_backup.yml
+    kind: bioc
+    severity: medium
+    category: Collection
+    mitre:
+      - T1113
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "\\\\Control\\\\Session Manager\\\\Configuration Manager\\\\EnablePeriodicBackup$" and xdm.target.registry.data ~= "^DWORD \\(0x00000001\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: windows-recall-feature-enabled-registr-75180c5f
+    name: Windows Recall Feature Enabled - Registry
+    description: |-
+      Detects the enabling of the Windows Recall feature via registry manipulation. Windows Recall can be enabled by setting the value of "DisableAIDataAnalysis" to "0".
+      Adversaries may enable Windows Recall as part of post-exploitation discovery and collection activities.
+      This rule assumes that Recall is already explicitly disabled on the host, and subsequently enabled by the adversary. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate use/activation of Windows Recall. Sigma rule by Sajid Nawaz Khan, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 75180c5f-4ea1-461a-a4f6-6e4700c065d4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_enable_windows_recall.yml
+    kind: bioc
+    severity: medium
+    category: Collection
+    mitre:
+      - T1113
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "\\\\Software\\\\Policies\\\\Microsoft\\\\Windows\\\\WindowsAI\\\\DisableAIDataAnalysis$" and xdm.target.registry.data ~= "^DWORD \\(0x00000000\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: enable-microsoft-dynamic-data-exchange-63647769
+    name: Enable Microsoft Dynamic Data Exchange
+    description: "Enable Dynamic Data Exchange protocol (DDE) in all supported editions of Microsoft Word or Excel. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 63647769-326d-4dde-a419-b925cc0caf42. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_office_enable_dde.yml"
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1559.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path ~= "\\\\Word\\\\Security\\\\AllowDDE$" and xdm.target.registry.data ~= "^(?:DWORD \\(0x00000001\\)|DWORD \\(0x00000002\\))$") or (xdm.target.registry.path ~= "(?:\\\\Excel\\\\Security\\\\DisableDDEServerLaunch|\\\\Excel\\\\Security\\\\DisableDDEServerLookup)$" and xdm.target.registry.data ~= "^DWORD \\(0x00000000\\)$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: filefix-command-evidence-in-typedpaths-4fee3d51
+    name: FileFix - Command Evidence in TypedPaths
+    description: "Detects commonly-used chained commands and strings in the most recent 'url' value of the 'TypedPaths' key, which could be indicative of a user being targeted by the FileFix technique. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by Alfie Champion (delivr.to), Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 4fee3d51-8069-4a4c-a0f7-924fcaff2c70. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_filefix_typedpath_commands.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1204.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path ~= "\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\TypedPaths\\\\url1$" and (xdm.target.registry.data ~= "#" and xdm.target.registry.data ~= "http")) and (xdm.target.registry.data ~= "(?:account|anti-bot|botcheck|captcha|challenge|confirmation|fraud|human|identification|identificator|identity|robot|validation|verification|verify)" or xdm.target.registry.data ~= "(?:%comspec%|bitsadmin|certutil|cmd|cscript|curl|finger|mshta|powershell|pwsh|regsvr32|rundll32|schtasks|wget|wscript)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-clickfix-execution-pattern-r-f5fe36cf
+    name: Potential ClickFix Execution Pattern - Registry
+    description: |-
+      Detects potential ClickFix malware execution patterns by monitoring registry modifications in RunMRU keys containing HTTP/HTTPS links.
+      ClickFix is known to be distributed through phishing campaigns and uses techniques like clipboard hijacking and fake CAPTCHA pages.
+      Through the fakecaptcha pages, the adversary tricks users into opening the Run dialog box and pasting clipboard-hijacked content,
+      such as one-liners that execute remotely hosted malicious files or scripts. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate applications using RunMRU with HTTP links. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f5fe36cf-f1ec-4c23-903d-09a3110f6bbb. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_potential_clickfix_execution.yml
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1204.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path contains "\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU\\" and xdm.target.registry.data ~= "(?:http://|https://)" and (xdm.target.registry.data ~= "(?:account|anti-bot|botcheck|captcha|challenge|confirmation|fraud|human|identification|identificator|identity|robot|validation|verification|verify)" or xdm.target.registry.data ~= "(?:%comspec%|bitsadmin|certutil|cmd|cscript|curl|finger|mshta|powershell|pwsh|regsvr32|rundll32|schtasks|wget|wscript)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-registry-persistence-attempt-73a883d0
+    name: Potential Registry Persistence Attempt Via Windows Telemetry
+    description: |-
+      Detects potential persistence behavior using the windows telemetry registry key.
+      Windows telemetry makes use of the binary CompatTelRunner.exe to run a variety of commands and perform the actual telemetry collections.
+      This binary was created to be easily extensible, and to that end, it relies on the registry to instruct on which commands to run.
+      The problem is, it will run any arbitrary command without restriction of location or type. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by Lednyov Alexey, oscd.community, Sreeman, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 73a883d0-0348-4be4-a8d8-51031c2564f8. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_telemetry_persistence.yml
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1053.005
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path contains "\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\TelemetryController\\" and xdm.target.registry.path ~= "\\\\Command$" and xdm.target.registry.data ~= "(?:\\.bat|\\.bin|\\.cmd|\\.dat|\\.dll|\\.exe|\\.hta|\\.jar|\\.js|\\.msi|\\.ps|\\.sh|\\.vb)") and not (xdm.target.registry.data ~= "(?:\\\\system32\\\\CompatTelRunner\\.exe|\\\\system32\\\\DeviceCensus\\.exe)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potentially-suspicious-command-execute-a7df0e9e
+    name: Potentially Suspicious Command Executed Via Run Dialog Box - Registry
+    description: |-
+      Detects execution of commands via the run dialog box on Windows by checking values of the "RunMRU" registry key.
+      This technique was seen being abused by threat actors to deceive users into pasting and executing malicious commands, often disguised as CAPTCHA verification steps. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by Ahmed Farouk, Nasreddine Bencherchali, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a7df0e9e-91a5-459a-a003-4cde67c2ff5d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_runmru_susp_command_execution.yml
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1059.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path contains "\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU" and ((xdm.target.registry.data ~= "(?:powershell|pwsh)" and xdm.target.registry.data ~= "(?: -e | -ec | -en | -enc | -enco|ftp|Hidden|http|iex|Invoke-)") or (xdm.target.registry.data contains "wmic" and xdm.target.registry.data ~= "(?:shadowcopy|process call create)")))'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: powershell-as-a-service-in-registry-4a5f5a5e
+    name: PowerShell as a Service in Registry
+    description: "Detects that a powershell code is written to the registry as a service. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by oscd.community, Natalia Shornikova, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 4a5f5a5e-ac01-474b-9b4e-d61298c9df1d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_powershell_as_service.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1569.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path contains "\\Services\\" and xdm.target.registry.path ~= "\\\\ImagePath$" and xdm.target.registry.data ~= "(?:powershell|pwsh)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: powershell-script-execution-policy-ena-8218c875
+    name: PowerShell Script Execution Policy Enabled
+    description: "Detects the enabling of the PowerShell script execution policy. Once enabled, this policy allows scripts to be executed. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Likely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), Thurein Oo, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8218c875-90b9-42e2-b60d-0b0069816d10. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_powershell_enablescripts_enabled.yml"
+    kind: bioc
+    severity: low
+    category: Execution
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "\\\\Policies\\\\Microsoft\\\\Windows\\\\PowerShell\\\\EnableScripts$" and xdm.target.registry.data ~= "^DWORD \\(0x00000001\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-space-characters-in-runmru-7a1b4c5e
+    name: Suspicious Space Characters in RunMRU Registry Path - ClickFix
+    description: "Detects the occurrence of numerous space characters in RunMRU registry paths, which may indicate execution via phishing lures using clickfix techniques to hide malicious commands in the Windows Run dialog box from naked eyes. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unlikely. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7a1b4c5e-8f3d-4b9a-7c2e-1f4a5b8c6d9e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_susp_runmru_space_character.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1204.004
+      - T1027.010
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path contains "\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU\\" and xdm.target.registry.data contains "#") and xdm.target.registry.data ~= "(?:            |            |            |            |            |            |            |            |            |            |            |            |            )")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-space-characters-in-typedpa-8f2a5c3d
+    name: Suspicious Space Characters in TypedPaths Registry Path - FileFix
+    description: "Detects the occurrence of numerous space characters in TypedPaths registry paths, which may indicate execution via phishing lures using file-fix techniques to hide malicious commands. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unlikely. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8f2a5c3d-9e4b-4a7c-8d1f-2e5a6b9c3d7e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_susp_typedpaths_space_characters.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1204.004
+      - T1027.010
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path ~= "\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\TypedPaths\\\\url1$" and xdm.target.registry.data contains "#") and xdm.target.registry.data ~= "(?:            |            |            |            |            |            |            |            |            |            |            |            |            )")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: wfp-filter-added-via-registry-1f1d8209
+    name: WFP Filter Added via Registry
+    description: "Detects registry modifications that add Windows Filtering Platform (WFP) filters, which may be used to block security tools and EDR agents from reporting events. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by Frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 1f1d8209-636e-4c6c-a137-781cca8b82f9. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_susp_wfp_filter_added.yml"
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1685
+      - T1569.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path contains "\\BFE\\Parameters\\Policy\\Persistent\\Filter\\" and not (xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\System32\\\\svchost\\.exe|C:\\\\Windows\\\\SysWOW64\\\\svchost\\.exe)$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: new-root-or-ca-or-authroot-certificate-d223b46b
+    name: New Root or CA or AuthRoot Certificate to Store
+    description: "Detects the addition of new root, CA or AuthRoot certificates to the Windows registry Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id d223b46b-5621-4037-88fe-fda32eead684. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_install_root_or_ca_certificat.yml"
+    kind: bioc
+    severity: medium
+    category: Impact
+    mitre:
+      - T1490
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path ~= "(?:\\\\SOFTWARE\\\\Microsoft\\\\SystemCertificates\\\\Root\\\\Certificates\\\\|\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\SystemCertificates\\\\Root\\\\Certificates\\\\|\\\\SOFTWARE\\\\Microsoft\\\\EnterpriseCertificates\\\\Root\\\\Certificates\\\\|\\\\SOFTWARE\\\\Microsoft\\\\SystemCertificates\\\\CA\\\\Certificates\\\\|\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\SystemCertificates\\\\CA\\\\Certificates\\\\)" or xdm.target.registry.path ~= "(?:\\\\SOFTWARE\\\\Microsoft\\\\EnterpriseCertificates\\\\CA\\\\Certificates\\\\|\\\\SOFTWARE\\\\Microsoft\\\\SystemCertificates\\\\AuthRoot\\\\Certificates\\\\|\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\SystemCertificates\\\\AuthRoot\\\\Certificates\\\\|\\\\SOFTWARE\\\\Microsoft\\\\EnterpriseCertificates\\\\AuthRoot\\\\Certificates\\\\)") and xdm.target.registry.path ~= "\\\\Blob$" and xdm.target.registry.data ~= "^Binary Data$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-ransomware-activity-using-le-8b9606c9
+    name: Potential Ransomware Activity Using LegalNotice Message
+    description: 'Detect changes to the "LegalNoticeCaption" or "LegalNoticeText" registry values where the message set contains keywords often used in ransomware ransom messages Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8b9606c9-28be-4a38-b146-0e313cc232c1. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_legalnotice_susp_message.yml'
+    kind: bioc
+    severity: high
+    category: Impact
+    mitre:
+      - T1491.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "(?:\\\\SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\LegalNoticeCaption|\\\\SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\LegalNoticeText)" and xdm.target.registry.data ~= "(?:encrypted|Unlock-Password|paying)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: registry-disable-system-restore-5de03871
+    name: Registry Disable System Restore
+    description: "Detects the modification of the registry to disable a system restore on the computer Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 5de03871-5d46-4539-a82d-3aa992a69a83. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_disable_system_restore.yml"
+    kind: bioc
+    severity: high
+    category: Impact
+    mitre:
+      - T1490
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "(?:\\\\Policies\\\\Microsoft\\\\Windows NT\\\\SystemRestore|\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\SystemRestore)" and xdm.target.registry.path ~= "(?:DisableConfig|DisableSR)$" and xdm.target.registry.data ~= "^DWORD \\(0x00000001\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: activate-suppression-of-windows-securi-0c93308a
+    name: Activate Suppression of Windows Security Center Notifications
+    description: "Detect set Notification_Suppress to 1 to disable the Windows security center notification Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0c93308a-3f1b-40a9-b649-57ea1a1c1d63. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_suppress_defender_notifications.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows Defender\\\\UX Configuration\\\\Notification_Suppress$" and xdm.target.registry.data ~= "^DWORD \\(0x00000001\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: add-debugger-entry-to-aedebug-for-pers-092af964
+    name: Add Debugger Entry To AeDebug For Persistence
+    description: 'Detects when an attacker adds a new "Debugger" value to the "AeDebug" key in order to achieve persistence which will get invoked when an application crashes Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate use of the key to setup a debugger. Which is often the case on developers machines. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 092af964-4233-4373-b4ba-d86ea2890288. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_aedebug_persistence.yml'
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path contains "\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug\\Debugger" and xdm.target.registry.data ~= "\\.dll$") and not (xdm.target.registry.data ~= "^\"C:\\\\WINDOWS\\\\system32\\\\vsjitdebugger\\.exe\" -p %ld -e %ld -j 0x%p$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: add-debugger-entry-to-hangs-key-for-pe-833ef470
+    name: Add Debugger Entry To Hangs Key For Persistence
+    description: 'Detects when an attacker adds a new "Debugger" value to the "Hangs" key in order to achieve persistence which will get invoked when an application crashes Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: This value is not set by default but could be rarly used by administrators. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 833ef470-fa01-4631-a79b-6f291c9ac498. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_hangs_debugger_persistence.yml'
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and xdm.target.registry.path contains "\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\Hangs\\Debugger"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: add-disallowrun-execution-to-registry-275641a5
+    name: Add DisallowRun Execution to Registry
+    description: "Detect set DisallowRun to 1 to prevent user running specific computer program Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 275641a5-a492-45e2-a817-7c81e9d9d3e9. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_disallowrun_execution.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\DisallowRun$" and xdm.target.registry.data ~= "^DWORD \\(0x00000001\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: allow-rdp-remote-assistance-feature-37b437cf
+    name: Allow RDP Remote Assistance Feature
+    description: "Detect enable rdp feature to allow specific user to rdp connect on the targeted machine Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate use of the feature (alerts should be investigated either way). Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 37b437cf-3fc5-4c8e-9c94-1d7c9aff842b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_allow_rdp_remote_assistance_feature.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "System\\\\CurrentControlSet\\\\Control\\\\Terminal Server\\\\fAllowToGetHelp$" and xdm.target.registry.data ~= "^DWORD \\(0x00000001\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: bypass-uac-using-event-viewer-674202d0
+    name: Bypass UAC Using Event Viewer
+    description: "Bypasses User Account Control using Event Viewer and a relevant Windows Registry modification Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 674202d0-b22a-4af4-ae5f-2eda1f3da1af. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_bypass_uac_using_eventviewer.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1547.010
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "_Classes\\\\mscfile\\\\shell\\\\open\\\\command\\\\\\(Default\\)$" and not (xdm.target.registry.data ~= "^%SystemRoot%\\\\system32\\\\mmc\\.exe \"%1\" %"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: change-the-fax-dll-9e3357ba
+    name: Change the Fax Dll
+    description: "Detect possible persistence using Fax DLL load when service restart Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9e3357ba-09d4-4fbd-a7c5-ad6386314513. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_fax_dll_persistance.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path ~= "\\\\Software\\\\Microsoft\\\\Fax\\\\Device Providers\\\\" and xdm.target.registry.path ~= "\\\\ImageName") and not (xdm.target.registry.data ~= "^%systemroot%\\\\system32\\\\fxst30\\.dll$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: change-user-account-associated-with-th-e3fdf743
+    name: Change User Account Associated with the FAX Service
+    description: "Detect change of the user account associated with the FAX service to avoid the escalation problem. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e3fdf743-f05b-4051-990a-b66919be1743. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_fax_change_service_user.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "^HKLM\\\\System\\\\CurrentControlSet\\\\Services\\\\Fax\\\\ObjectName$" and not (xdm.target.registry.data contains "NetworkService"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: classes-autorun-keys-modification-9df5f547
+    name: Classes Autorun Keys Modification
+    description: |-
+      Detects modification of Windows Registry Classes keys used for persistence.
+      Adversaries modify these autostart extensibility points (ASEP) to execute malicious code when file types are opened or actions are performed.
+      Various legitimate software also uses these keys. Currently, this rule only filters out known legitimate software paths,
+      thus it is recommended to review and tune filters for your environment to reduce false positives before deploying to production. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate software automatically (mostly, during installation) sets up autorun keys for legitimate reason; Legitimate administrator sets up autorun keys for legitimate reason. Sigma rule by Victor Sergeev, Daniil Yugoslavskiy, Gleb Sukhodolskiy, Timur Zinniatullin, oscd.community, Tim Shelton, frack113 (split), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9df5f547-c86a-433e-b533-f2794357e242. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_asep_reg_keys_modification_classes.yml
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1547.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path contains "\\Software\\Classes" and (xdm.target.registry.path ~= "(?:\\\\Folder\\\\ShellEx\\\\ExtShellFolderViews|\\\\Folder\\\\ShellEx\\\\DragDropHandlers|\\\\Folder\\\\Shellex\\\\ColumnHandlers|\\\\Filter|\\\\Exefile\\\\Shell\\\\Open\\\\Command\\\\\\(Default\\)|\\\\Directory\\\\Shellex\\\\DragDropHandlers|\\\\Directory\\\\Shellex\\\\CopyHookHandlers|\\\\CLSID\\\\\\{AC757296-3522-4E11-9862-C17BE5A1767E\\}\\\\Instance|\\\\CLSID\\\\\\{ABE3B9A4-257D-4B97-BD1A-294AF496222E\\}\\\\Instance)" or xdm.target.registry.path ~= "(?:\\\\CLSID\\\\\\{7ED96837-96F0-4812-B211-F13C24117ED3\\}\\\\Instance|\\\\CLSID\\\\\\{083863F1-70DE-11d0-BD40-00A0C911CE86\\}\\\\Instance|\\\\Classes\\\\AllFileSystemObjects\\\\ShellEx\\\\DragDropHandlers|\\\\\\.exe|\\\\\\.cmd|\\\\ShellEx\\\\PropertySheetHandlers|\\\\ShellEx\\\\ContextMenuHandlers)")) and not ((xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\System32\\\\drvinst\\.exe$" or xdm.target.registry.data ~= "^\\(Empty\\)$" or not (xdm.target.registry.data ~= ".") or (xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\System32\\\\svchost\\.exe$" and xdm.target.registry.path contains "\\lnkfile\\shellex\\ContextMenuHandlers\\"))) and not (xdm.target.registry.data ~= "^\\{807583E5-5146-11D5-A672-00B0D022E945\\}$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: clickonce-trust-prompt-tampering-ac9159cc
+    name: ClickOnce Trust Prompt Tampering
+    description: "Detects changes to the ClickOnce trust prompt registry key in order to enable an installation from different locations such as the Internet. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate internal requirements.. Sigma rule by @SerkinValery, Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ac9159cc-c364-4304-8f0a-d63fc1a0aabb. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_clickonce_trust_prompt.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path contains "\\SOFTWARE\\MICROSOFT\\.NETFramework\\Security\\TrustManager\\PromptingLevel\\" and xdm.target.registry.path ~= "(?:\\\\Internet|\\\\LocalIntranet|\\\\MyComputer|\\\\TrustedSites|\\\\UntrustedSites)$" and xdm.target.registry.data ~= "^Enabled$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: com-hijack-via-sdclt-07743f65
+    name: COM Hijack via Sdclt
+    description: "Detects changes to 'HKCU\\Software\\Classes\\Folder\\shell\\open\\command\\DelegateExecute' Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by Omkar Gudhate, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 07743f65-7ec9-404a-a519-913db7118a8d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_comhijack_sdclt.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1546
+      - T1548
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and xdm.target.registry.path contains "\\Software\\Classes\\Folder\\shell\\open\\command\\DelegateExecute"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: com-hijacking-via-treatas-dc5c24af
+    name: COM Hijacking via TreatAs
+    description: 'Detect modification of TreatAs key to enable "rundll32.exe -sta" command Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate use. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id dc5c24af-6995-49b2-86eb-a9ff62199e82. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_treatas_persistence.yml'
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1546.015
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "TreatAs\\\\\\(Default\\)$" and not (((xdm.source.process.executable.path ~= "^C:\\\\Program Files\\\\Common Files\\\\Microsoft Shared\\\\ClickToRun\\\\" and xdm.source.process.executable.path ~= "\\\\OfficeClickToRun\\.exe$") or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Microsoft Office\\\\root\\\\integration\\\\integrator\\.exe|C:\\\\Program Files \\(x86\\)\\\\Microsoft Office\\\\root\\\\integration\\\\integrator\\.exe)$" or xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\system32\\\\svchost\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\system32\\\\msiexec\\.exe|C:\\\\Windows\\\\SysWOW64\\\\msiexec\\.exe)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: com-object-hijacking-via-modification-790317c0
+    name: COM Object Hijacking Via Modification Of Default System CLSID Default Value
+    description: "Detects potential COM object hijacking via modification of default system CLSID. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 790317c0-0a36-4a6a-a105-6e576bf99a14. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_persistence_com_hijacking_builtin.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1546.015
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (((xdm.target.registry.path contains "\\CLSID\\" and xdm.target.registry.path ~= "(?:\\\\InprocServer32\\\\\\(Default\\)|\\\\LocalServer32\\\\\\(Default\\))$") and (xdm.target.registry.path ~= "(?:\\\\\\{1f486a52-3cb1-48fd-8f50-b8dc300d9f9d\\}\\\\|\\\\\\{2155fee3-2419-4373-b102-6843707eb41f\\}\\\\|\\\\\\{4590f811-1d3a-11d0-891f-00aa004b2e24\\}\\\\|\\\\\\{4de225bf-cf59-4cfc-85f7-68b90f185355\\}\\\\|\\\\\\{ddc05a5a-351a-4e06-8eaf-54ec1bc2dcea\\}\\\\|\\\\\\{F56F6FDD-AA9D-4618-A949-C1B91AF43B1A\\}\\\\|\\\\\\{F82B4EF1-93A9-4DDE-8015-F7950A1A6E31\\}\\\\|\\\\\\{7849596a-48ea-486e-8937-a2a3009f31a9\\}\\\\)" or xdm.target.registry.path ~= "(?:\\\\\\{0b91a74b-ad7c-4a9d-b563-29eef9167172\\}\\\\|\\\\\\{603D3801-BD81-11d0-A3A5-00C04FD706EC\\}\\\\|\\\\\\{30D49246-D217-465F-B00B-AC9DDD652EB7\\}\\\\|\\\\\\{A7A63E5C-3877-4840-8727-C1EA9D7A4D50\\}\\\\|\\\\\\{2227A280-3AEA-1069-A2DE-08002B30309D\\}\\\\|\\\\\\{2DEA658F-54C1-4227-AF9B-260AB5FC3543\\}\\\\|\\\\\\{AA509086-5Ca9-4C25-8F95-589D3C07B48A\\}\\\\)")) and (xdm.target.registry.data ~= "(?::\\\\Perflogs\\\\|\\\\AppData\\\\Local\\\\|\\\\Desktop\\\\|\\\\Downloads\\\\|\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\|\\\\System32\\\\spool\\\\drivers\\\\color\\\\|\\\\Temporary Internet|\\\\Users\\\\Public\\\\|\\\\Windows\\\\Temp\\\\|%appdata%|%temp%|%tmp%)" or ((xdm.target.registry.data ~= ":\\\\Users\\\\" and xdm.target.registry.data ~= "\\\\Favorites\\\\") or (xdm.target.registry.data ~= ":\\\\Users\\\\" and xdm.target.registry.data ~= "\\\\Favourites\\\\") or (xdm.target.registry.data ~= ":\\\\Users\\\\" and xdm.target.registry.data ~= "\\\\Contacts\\\\") or (xdm.target.registry.data ~= ":\\\\Users\\\\" and xdm.target.registry.data ~= "\\\\Pictures\\\\"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: common-autorun-keys-modification-f59c3faf
+    name: Common Autorun Keys Modification
+    description: "Detects modification of autostart extensibility point (ASEP) in registry. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate software automatically (mostly, during installation) sets up autorun keys for legitimate reason; Legitimate administrator sets up autorun keys for legitimate reason. Sigma rule by Victor Sergeev, Daniil Yugoslavskiy, Gleb Sukhodolskiy, Timur Zinniatullin, oscd.community, Tim Shelton, frack113 (split), wagga (name), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f59c3faf-50f3-464b-9f4c-1b67ab512d99. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_asep_reg_keys_modification_common.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1547.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path ~= "(?:\\\\SOFTWARE\\\\Wow6432Node\\\\Microsoft\\\\Windows CE Services\\\\AutoStart|\\\\Software\\\\Wow6432Node\\\\Microsoft\\\\Command Processor\\\\Autorun|\\\\SOFTWARE\\\\Wow6432Node\\\\Microsoft\\\\Active Setup\\\\Installed Components|\\\\SOFTWARE\\\\Microsoft\\\\Windows CE Services\\\\AutoStartOnDisconnect|\\\\SOFTWARE\\\\Microsoft\\\\Windows CE Services\\\\AutoStartOnConnect|\\\\SYSTEM\\\\Setup\\\\CmdLine)" or xdm.target.registry.path ~= "(?:\\\\Software\\\\Microsoft\\\\Ctf\\\\LangBarAddin|\\\\Software\\\\Microsoft\\\\Command Processor\\\\Autorun|\\\\SOFTWARE\\\\Microsoft\\\\Active Setup\\\\Installed Components|\\\\SOFTWARE\\\\Classes\\\\Protocols\\\\Handler|\\\\SOFTWARE\\\\Classes\\\\Protocols\\\\Filter|\\\\SOFTWARE\\\\Classes\\\\Htmlfile\\\\Shell\\\\Open\\\\Command\\\\\\(Default\\)|\\\\Environment\\\\UserInitMprLogonScript)" or xdm.target.registry.path ~= "(?:\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\Control Panel\\\\Desktop\\\\Scrnsave\\.exe|\\\\Software\\\\Microsoft\\\\Internet Explorer\\\\UrlSearchHooks|\\\\SOFTWARE\\\\Microsoft\\\\Internet Explorer\\\\Desktop\\\\Components|\\\\Software\\\\Classes\\\\Clsid\\\\\\{AB8902B4-09CA-4bb6-B78D-A8F59079A8D5\\}\\\\Inprocserver32|\\\\Control Panel\\\\Desktop\\\\Scrnsave\\.exe)") and not ((xdm.target.registry.data ~= "^\\(Empty\\)$" or not (xdm.target.registry.data ~= ".") or xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\System32\\\\poqexec\\.exe$")) and not (((xdm.target.registry.path ~= "(?:\\\\Office\\\\ClickToRun\\\\REGISTRY\\\\MACHINE\\\\Software\\\\Classes\\\\PROTOCOLS\\\\Handler\\\\|\\\\ClickToRunStore\\\\HKMU\\\\SOFTWARE\\\\Classes\\\\PROTOCOLS\\\\Handler\\\\)" or xdm.target.registry.data ~= "^(?:\\{314111c7-a502-11d2-bbca-00c04f8ec294\\}|\\{3459B272-CC19-4448-86C9-DDC3B4B2FAD3\\}|\\{42089D2D-912D-4018-9087-2B87803E93FB\\}|\\{5504BE45-A83B-4808-900A-3A5C36E7F77A\\}|\\{807583E5-5146-11D5-A672-00B0D022E945\\})$") or xdm.target.registry.path contains "\\SOFTWARE\\Microsoft\\Active Setup\\Installed Components\\{8A69D345-D564-463c-AFF1-A69D9E530F96}" or xdm.target.registry.path contains "\\SOFTWARE\\Microsoft\\Active Setup\\Installed Components\\{9459C573-B17A-45AE-9F64-1857B5D58CEE}" or xdm.target.registry.path contains "\\Software\\Microsoft\\Active Setup\\Installed Components\\{89820200-ECBD-11cf-8B85-00AA005B4383}" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft Office\\\\root\\\\integration\\\\integrator\\.exe|C:\\\\Program Files\\\\Microsoft Office\\\\root\\\\integration\\\\integrator\\.exe)$" or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Common Files\\\\Microsoft Shared\\\\ClickToRun\\\\|C:\\\\Program Files\\\\Common Files\\\\Microsoft Shared\\\\ClickToRun\\\\Updates\\\\)" and xdm.source.process.executable.path ~= "\\\\OfficeClickToRun\\.exe$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: crashcontrol-crashdump-disabled-2ff692c2
+    name: CrashControl CrashDump Disabled
+    description: "Detects disabling the CrashDump per registry (as used by HermeticWiper) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate disabling of crashdumps. Sigma rule by Tobias Michalski (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 2ff692c2-4594-41ec-8fcb-46587de769e0. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_crashdump_disabled.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1564
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path contains "SYSTEM\\CurrentControlSet\\Control\\CrashControl" and xdm.target.registry.data ~= "^DWORD \\(0x00000000\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: currentversion-nt-autorun-keys-modific-cbf93e5d
+    name: CurrentVersion NT Autorun Keys Modification
+    description: "Detects modification of autostart extensibility point (ASEP) in registry. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate software automatically (mostly, during installation) sets up autorun keys for legitimate reason; Legitimate administrator sets up autorun keys for legitimate reason. Sigma rule by Victor Sergeev, Daniil Yugoslavskiy, Gleb Sukhodolskiy, Timur Zinniatullin, oscd.community, Tim Shelton, frack113 (split), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id cbf93e5d-ca6c-4722-8bea-e9119007c248. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_asep_reg_keys_modification_currentversion_nt.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1547.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path contains "\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" and xdm.target.registry.path ~= "(?:\\\\Winlogon\\\\VmApplet|\\\\Winlogon\\\\Userinit|\\\\Winlogon\\\\Taskman|\\\\Winlogon\\\\Shell|\\\\Winlogon\\\\GpExtensions|\\\\Winlogon\\\\AppSetup|\\\\Winlogon\\\\AlternateShells\\\\AvailableShells|\\\\Windows\\\\IconServiceLib|\\\\Windows\\\\Appinit_Dlls|\\\\Image File Execution Options|\\\\Font Drivers|\\\\Drivers32|\\\\Windows\\\\Run|\\\\Windows\\\\Load)") and not ((xdm.target.registry.data ~= "^\\(Empty\\)$" or not (xdm.target.registry.data ~= ".") or xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\System32\\\\poqexec\\.exe$" or (xdm.target.registry.path contains "\\Image File Execution Options\\" and xdm.target.registry.path ~= "(?:\\\\DisableExceptionChainValidation|\\\\MitigationOptions)$") or (xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\system32\\\\svchost\\.exe$" and xdm.target.registry.path ~= "(?:\\\\Winlogon\\\\GPExtensions\\\\\\{827D319E-6EAC-11D2-A4EA-00C04F79F83A\\}\\\\PreviousPolicyAreas|\\\\Winlogon\\\\GPExtensions\\\\\\{827D319E-6EAC-11D2-A4EA-00C04F79F83A\\}\\\\MaxNoGPOListChangesInterval)" and xdm.target.registry.data ~= "^(?:DWORD \\(0x00000001\\)|DWORD \\(0x00000009\\)|DWORD \\(0x000003c0\\))$") or (xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\System32\\\\RuntimeBroker\\.exe$" and xdm.target.registry.path contains "\\runtimebroker.exe\\Microsoft.Windows.ShellExperienceHost"))) and not (((xdm.source.process.executable.path ~= "^C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Temp\\\\" and xdm.source.process.executable.path ~= "\\\\MicrosoftEdgeUpdate\\.exe$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Avira\\\\Antivirus\\\\avguard\\.exe|C:\\\\Program Files\\\\Avira\\\\Antivirus\\\\avguard\\.exe)" and xdm.target.registry.path contains "SOFTWARE\\WOW6432Node\\Avira\\Antivirus\\Overwrite_Keys\\HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\" and xdm.target.registry.path ~= "(?:\\\\userinit\\\\UseAsDefault|\\\\shell\\\\UseAsDefault)$" and xdm.target.registry.data ~= "^(?:explorer\\.exe|C:\\\\Windows\\\\system32\\\\userinit\\.exe,)$") or (xdm.target.registry.path ~= "(?:\\\\ClickToRunStore\\\\HKLM\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\|\\\\ClickToRun\\\\REGISTRY\\\\MACHINE\\\\Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\)" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Microsoft Office\\\\root\\\\integration\\\\integrator\\.exe|C:\\\\Program Files \\(x86\\)\\\\Microsoft Office\\\\root\\\\integration\\\\integrator\\.exe)$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Common Files\\\\Microsoft Shared\\\\ClickToRun\\\\|C:\\\\Program Files\\\\Common Files\\\\Microsoft Shared\\\\ClickToRun\\\\Updates\\\\)" and xdm.source.process.executable.path ~= "\\\\OfficeClickToRun\\.exe$") or (xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\Microsoft\\.NET\\\\Framework" and xdm.source.process.executable.path ~= "\\\\ngen\\.exe$") or (xdm.source.process.executable.path ~= "\\\\AppData\\\\Local\\\\Microsoft\\\\OneDrive\\\\StandaloneUpdater\\\\OneDriveSetup\\.exe$" and xdm.target.registry.path ~= "\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\RunOnce\\\\Delete Cached Update Binary$" and xdm.target.registry.data ~= "^C:\\\\Windows\\\\system32\\\\cmd\\.exe /q /c del /q \"C:\\\\Users\\\\" and xdm.target.registry.data ~= "\\\\AppData\\\\Local\\\\Microsoft\\\\OneDrive\\\\Update\\\\OneDriveSetup\\.exe\"$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: default-rdp-port-changed-to-non-standa-509e84b9
+    name: Default RDP Port Changed to Non Standard Port
+    description: |-
+      Detects changes to the default RDP port.
+      Remote desktop is a common feature in operating systems. It allows a user to log into a remote system using an interactive session with a graphical user interface.
+      Microsoft refers to its implementation of the Remote Desktop Protocol (RDP) as Remote Desktop Services (RDS). Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 509e84b9-a71a-40e0-834f-05470369bd1e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_change_rdp_port.yml
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1547.010
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "\\\\Control\\\\Terminal Server\\\\WinStations\\\\RDP-Tcp\\\\PortNumber$" and not ((xdm.target.registry.data ~= "^DWORD \\(0x00000d3d\\)$" or xdm.target.registry.data ~= "^3389$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dhcp-callout-dll-installation-9d3436ef
+    name: DHCP Callout DLL Installation
+    description: "Detects the installation of a Callout DLL via CalloutDlls and CalloutEnabled parameter in Registry, which can be used to execute code in context of the DHCP server (restart required) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by Dimitrios Slamaris, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9d3436ef-9476-4c43-acca-90ce06bdf33a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_dhcp_calloutdll.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1574.001
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and xdm.target.registry.path ~= "(?:\\\\Services\\\\DHCPServer\\\\Parameters\\\\CalloutDlls|\\\\Services\\\\DHCPServer\\\\Parameters\\\\CalloutEnabled)$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: directory-service-restore-mode-dsrm-re-b61e87c0
+    name: Directory Service Restore Mode(DSRM) Registry Value Tampering
+    description: |-
+      Detects changes to "DsrmAdminLogonBehavior" registry value.
+      During a Domain Controller (DC) promotion, administrators create a Directory Services Restore Mode (DSRM) local administrator account with a password that rarely changes. The DSRM account is an “Administrator” account that logs in with the DSRM mode when the server is booting up to restore AD backups or recover the server from a failure.
+      Attackers could abuse DSRM account to maintain their persistence and access to the organization's Active Directory.
+      If the "DsrmAdminLogonBehavior" value is set to "0", the administrator account can only be used if the DC starts in DSRM.
+      If the "DsrmAdminLogonBehavior" value is set to "1", the administrator account can only be used if the local AD DS service is stopped.
+      If the "DsrmAdminLogonBehavior" value is set to "2", the administrator account can always be used. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by Nischal Khadgi, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b61e87c0-50db-4b2e-8986-6a2be94b33b0. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_dsrm_tampering.yml
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1556
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "\\\\Control\\\\Lsa\\\\DsrmAdminLogonBehavior$" and not (xdm.target.registry.data ~= "^DWORD \\(0x00000000\\)$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: disable-internal-tools-or-feature-in-r-e2482f8d
+    name: Disable Internal Tools or Feature in Registry
+    description: "Detects registry modifications that change features of internal Windows tools (malware like Agent Tesla uses this technique) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate script or Group Policy (GPO) configuration by administrators. Sigma rule by frack113, Nasreddine Bencherchali (Nextron Systems), CrimpSec, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e2482f8d-3443-4237-b906-cc145d87a076. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_disable_function_user.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (((xdm.target.registry.path ~= "(?:SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\DisableCMD|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\HideSCAHealth|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\HideSCANetwork|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\HideSCAVolume)$" or xdm.target.registry.path ~= "(?:SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\NoClose|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\NoControlPanel|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\NoDesktop|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\NoDrives)$" or xdm.target.registry.path ~= "(?:SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\NoFileMenu|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\NoFind|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\NoLogOff|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\NoPropertiesMyDocuments)$" or xdm.target.registry.path ~= "(?:SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\NoRun|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\NoSetTaskbar|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\NoTrayContextMenu|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\StartMenuLogOff)$" or xdm.target.registry.path ~= "(?:SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\DisableChangePassword|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\DisableLockWorkstation|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\DisableRegistryTools|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\DisableTaskmgr)$" or xdm.target.registry.path ~= "(?:SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\NoDispBackgroundPage|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\NoDispCPL|SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\Explorer\\\\DisableNotificationCenter|SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\System\\\\DisableCMD)$") and xdm.target.registry.data ~= "^DWORD \\(0x00000001\\)$") or (xdm.target.registry.path ~= "SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows\\\\System\\\\DisableCMD$" and xdm.target.registry.data ~= "^DWORD \\(0x00000002\\)$") or ((xdm.target.registry.path ~= "(?:SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\ConsentPromptBehaviorAdmin|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\InactivityTimeoutSecs|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\shutdownwithoutlogon|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\PushNotifications\\\\ToastEnabled)$" or xdm.target.registry.path ~= "(?:SYSTEM\\\\CurrentControlSet\\\\Control\\\\Storage\\\\Write Protection|SYSTEM\\\\CurrentControlSet\\\\Control\\\\StorageDevicePolicies\\\\WriteProtect)$") and xdm.target.registry.data ~= "^DWORD \\(0x00000000\\)$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: disable-windows-security-center-notifi-3ae1a046
+    name: Disable Windows Security Center Notifications
+    description: "Detect set UseActionCenterExperience to 0 to disable the Windows security center notification Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3ae1a046-f7db-439d-b7ce-b8b366b81fa6. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_disable_security_center_notifications.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "Windows\\\\CurrentVersion\\\\ImmersiveShell\\\\UseActionCenterExperience$" and xdm.target.registry.data ~= "^DWORD \\(0x00000000\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-over-https-enabled-by-registry-04b45a8a
+    name: DNS-over-HTTPS Enabled by Registry
+    description: |-
+      Detects when a user enables DNS-over-HTTPS.
+      This can be used to hide internet activity or be used to hide the process of exfiltrating data.
+      With this enabled organization will lose visibility into data such as query type, response and originating IP that are used to determine bad actors. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unlikely. Sigma rule by Austin Songer, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 04b45a8a-d11d-49e4-9acc-4a1b524407a5. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_dns_over_https_enabled.yml
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1140
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path ~= "\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Edge\\\\BuiltInDnsClientEnabled$" and xdm.target.registry.data ~= "^DWORD \\(0x00000001\\)$") or (xdm.target.registry.path ~= "\\\\SOFTWARE\\\\Google\\\\Chrome\\\\DnsOverHttpsMode$" and xdm.target.registry.data ~= "^secure$") or (xdm.target.registry.path ~= "\\\\SOFTWARE\\\\Policies\\\\Mozilla\\\\Firefox\\\\DNSOverHTTPS\\\\Enabled$" and xdm.target.registry.data ~= "^DWORD \\(0x00000001\\)$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: enable-lm-hash-storage-c420410f
+    name: Enable LM Hash Storage
+    description: |-
+      Detects changes to the "NoLMHash" registry value in order to allow Windows to store LM Hashes.
+      By setting this registry value to "0" (DWORD), Windows will be allowed to store a LAN manager hash of your password in Active Directory and local SAM databases. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c420410f-c2d8-4010-856b-dffe21866437. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_system_lsa_nolmhash.yml
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "System\\\\CurrentControlSet\\\\Control\\\\Lsa\\\\NoLMHash$" and xdm.target.registry.data ~= "^DWORD \\(0x00000000\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: enable-local-manifest-installation-wit-fa277e82
+    name: Enable Local Manifest Installation With Winget
+    description: "Detects changes to the AppInstaller (winget) policy. Specifically the activation of the local manifest installation, which allows a user to install new packages via custom manifests. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Administrators or developers might enable this for testing purposes or to install custom private packages. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id fa277e82-9b78-42dd-b05c-05555c7b6015. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_winget_enable_local_manifest.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "\\\\AppInstaller\\\\EnableLocalManifestFiles$" and xdm.target.registry.data ~= "^DWORD \\(0x00000001\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: enabling-cor-profiler-environment-vari-ad89044a
+    name: Enabling COR Profiler Environment Variables
+    description: 'Detects .NET Framework CLR and .NET Core CLR "cor_enable_profiling" and "cor_profiler" variables being set and configured. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Sigma rule by Jose Rodriguez (@Cyb3rPandaH), OTR (Open Threat Research), Jimmy Bayne (@bohops), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ad89044a-8f49-4673-9a55-cbd88a1b374f. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_enabling_cor_profiler_env_variables.yml'
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1574.012
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "(?:\\\\COR_ENABLE_PROFILING|\\\\COR_PROFILER|\\\\CORECLR_ENABLE_PROFILING)$" or xdm.target.registry.path contains "\\CORECLR_PROFILER_PATH")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: etw-logging-disabled-for-rpcrt4-dll-90f342e1
+    name: ETW Logging Disabled For rpcrt4.dll
+    description: 'Detects changes to the "ExtErrorInformation" key in order to disable ETW logging for rpcrt4.dll Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 90f342e1-1aaa-4e43-b092-39fda57ed11e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_rpcrt4_etw_tamper.yml'
+    kind: bioc
+    severity: low
+    category: Persistence
+    mitre:
+      - T1112
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "\\\\Microsoft\\\\Windows NT\\\\Rpc\\\\ExtErrorInformation$" and xdm.target.registry.data ~= "^(?:DWORD \\(0x00000000\\)|DWORD \\(0x00000002\\))$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: etw-logging-disabled-for-scm-4f281b83
+    name: ETW Logging Disabled For SCM
+    description: 'Detects changes to the "TracingDisabled" key in order to disable ETW logging for services.exe (SCM) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 4f281b83-0200-4b34-bf35-d24687ea57c2. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_services_etw_tamper.yml'
+    kind: bioc
+    severity: low
+    category: Persistence
+    mitre:
+      - T1112
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Tracing\\\\SCM\\\\Regular\\\\TracingDisabled$" and xdm.target.registry.data ~= "^DWORD \\(0x00000001\\)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: etw-logging-disabled-in-net-processes-bf4fc428
+    name: ETW Logging Disabled In .NET Processes - Sysmon Registry
+    description: "Potential adversaries stopping ETW providers recording loaded .NET assemblies. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id bf4fc428-dcc3-4bbd-99fe-2422aeee2544. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_dot_net_etw_tamper.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1112
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path ~= "SOFTWARE\\\\Microsoft\\\\\\.NETFramework\\\\ETWEnabled$" and xdm.target.registry.data ~= "^DWORD \\(0x00000000\\)$") or (xdm.target.registry.path ~= "(?:\\\\COMPlus_ETWEnabled|\\\\COMPlus_ETWFlags)$" and xdm.target.registry.data ~= "^(?:0|DWORD \\(0x00000000\\))$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: ie-change-domain-zone-45e112d0
+    name: IE Change Domain Zone
+    description: "Hides the file extension through modification of the registry Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Administrative scripts. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 45e112d0-7759-4c2a-aa36-9f8fb79d3393. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_change_security_zones.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1137
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path contains "\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\ZoneMap\\Domains\\" and not (xdm.target.registry.data ~= "^(?:DWORD \\(0x00000000\\)|DWORD \\(0x00000001\\)|\\(Empty\\))$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: internet-explorer-autorun-keys-modific-a80f662f
+    name: Internet Explorer Autorun Keys Modification
+    description: "Detects modification of autostart extensibility point (ASEP) in registry. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate software automatically (mostly, during installation) sets up autorun keys for legitimate reason; Legitimate administrator sets up autorun keys for legitimate reason. Sigma rule by Victor Sergeev, Daniil Yugoslavskiy, Gleb Sukhodolskiy, Timur Zinniatullin, oscd.community, Tim Shelton, frack113 (split), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a80f662f-022f-4429-9b8c-b1a41aaa6688. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_asep_reg_keys_modification_internet_explorer.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1547.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path ~= "(?:\\\\Software\\\\Wow6432Node\\\\Microsoft\\\\Internet Explorer|\\\\Software\\\\Microsoft\\\\Internet Explorer)" and xdm.target.registry.path ~= "(?:\\\\Toolbar|\\\\Extensions|\\\\Explorer Bars)" and not ((xdm.target.registry.data ~= "^\\(Empty\\)$" or xdm.target.registry.path ~= "(?:\\\\Extensions\\\\\\{2670000A-7350-4f3c-8081-5663EE0C6C49\\}|\\\\Extensions\\\\\\{31D09BA0-12F5-4CCE-BE8A-2923E76605DA\\}|\\\\Extensions\\\\\\{789FE86F-6FC4-46A1-9849-EDE0DB0C95CA\\}|\\\\Extensions\\\\\\{A95fe080-8f5d-11d2-a20b-00aa003c157a\\})" or xdm.target.registry.path ~= "(?:\\\\Toolbar\\\\ShellBrowser\\\\ITBar7Layout|\\\\Toolbar\\\\ShowDiscussionButton|\\\\Toolbar\\\\Locked)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: macro-enabled-in-a-potentially-suspici-a166f74e
+    name: Macro Enabled In A Potentially Suspicious Document
+    description: "Detects registry changes to Office trust records where the path is located in a potentially suspicious location Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a166f74e-bf44-409d-b9ba-ea4b2dd8b3cd. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_office_trust_record_susp_location.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path contains "\\Security\\Trusted Documents\\TrustRecords" and xdm.target.registry.path ~= "(?:/AppData/Local/Microsoft/Windows/INetCache/|/AppData/Local/Temp/|/PerfLogs/|C:/Users/Public/|file:///D:/|file:///E:/)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: modification-of-ie-registry-settings-d88d0ab2
+    name: Modification of IE Registry Settings
+    description: "Detects modification of the registry settings used for Internet Explorer and other Windows components that use these settings. An attacker can abuse this registry key to add a domain to the trusted sites Zone or insert JavaScript for persistence Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id d88d0ab2-e696-4d40-a2ed-9790064e66b3. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_persistence_ie.yml"
+    kind: bioc
+    severity: low
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and (xdm.target.registry.path contains "\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" and not ((xdm.target.registry.data ~= "^DWORD" or not (xdm.target.registry.data ~= ".") or xdm.target.registry.data ~= "^(?:Cookie:|Visited:|\\(Empty\\))$" or xdm.target.registry.path ~= "(?:\\\\Cache|\\\\ZoneMap|\\\\WpadDecision)" or xdm.target.registry.data ~= "^Binary Data$")) and not (xdm.target.registry.path contains "\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Accepted Documents"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: modify-user-shell-folders-startup-valu-9c226817
+    name: Modify User Shell Folders Startup Value
+    description: |-
+      Detect modification of the User Shell Folders registry values for Startup or Common Startup which could indicate persistence attempts.
+      Attackers may modify User Shell Folders registry keys to point to malicious executables or scripts that will be executed during startup.
+      This technique is often used to maintain persistence on a compromised system by ensuring that the malicious payload is executed automatically. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9c226817-8dc9-46c2-a58d-66655aafd7dc. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_susp_user_shell_folders.yml
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1547.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and ((xdm.target.registry.path ~= "(?:SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\User Shell Folders|SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\Shell Folders)" and xdm.target.registry.path ~= "(?:\\\\Common Startup|\\\\Startup)$") and not ((not (xdm.target.registry.data ~= ".") or xdm.target.registry.data ~= "(?:C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup|%ProgramData%\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup)" or xdm.target.registry.data ~= "(?:%USERPROFILE%\\\\AppData\\\\Roaming\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup|%%USERPROFILE%%\\\\AppData\\\\Roaming\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup)" or (xdm.target.registry.data ~= "C:\\\\Users\\\\" and xdm.target.registry.data ~= "\\\\AppData\\\\Roaming\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: net-ngenassemblyusagelog-registry-key-28036918
+    name: NET NGenAssemblyUsageLog Registry Key Tamper
+    description: |-
+      Detects changes to the NGenAssemblyUsageLog registry key.
+      .NET Usage Log output location can be controlled by setting the NGenAssemblyUsageLog CLR configuration knob in the Registry or by configuring an environment variable (as described in the next section).
+      By simplify specifying an arbitrary value (e.g. fake output location or junk data) for the expected value, a Usage Log file for the .NET execution context will not be created. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 28036918-04d3-423d-91c0-55ecf99fb892. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_net_cli_ngenassemblyusagelog.yml
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and xdm.target.registry.path ~= "SOFTWARE\\\\Microsoft\\\\\\.NETFramework\\\\NGenAssemblyUsageLog$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: new-bginfo-exe-custom-db-path-registry-53330955
+    name: New BgInfo.EXE Custom DB Path Registry Configuration
+    description: "Detects setting of a new registry database value related to BgInfo configuration. Attackers can for example set this value to save the results of the commands executed by BgInfo in order to exfiltrate information. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 13). Known false positives: Legitimate use of external DB to save the results. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 53330955-dc52-487f-a3a2-da24dcff99b5. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_set/registry_set_bginfo_custom_db.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_value_set" and xdm.target.registry.path ~= "\\\\Software\\\\Winternals\\\\BGInfo\\\\Database$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 2026.1118.0
+    released: 2026-11-18
+    notes: Converted from the SigmaHQ rules at 698f0912f571d5fac3bf8c51f5421139834a011c.

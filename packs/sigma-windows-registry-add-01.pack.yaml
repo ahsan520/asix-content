@@ -1,0 +1,50 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: sigma-windows-registry-add-01
+name: "Sigma: Windows registry add"
+description: "1 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows registry add events, grouped by tactic Persistence. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires."
+version: 2026.1118.0
+audience: enterprise
+publisher:
+  name: SigmaHQ community, converted for ASIX
+  url: https://github.com/SigmaHQ/sigma
+certification: community
+supported_by: community
+rules_start_off: true
+tags:
+  - sigma
+  - windows
+  - registry-add
+license: DRL-1.1
+sources:
+  - Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 12)
+rules:
+  - key: potential-persistence-via-disk-cleanup-d4f4e0be
+    name: Potential Persistence Via Disk Cleanup Handler - Registry
+    description: |-
+      Detects when an attacker modifies values of the Disk Cleanup Handler in the registry to achieve persistence.
+      The disk cleanup manager is part of the operating system. It displays the dialog box […]
+      The user has the option of enabling or disabling individual handlers by selecting or clearing their check box in the disk cleanup manager's UI.
+      Although Windows comes with a number of disk cleanup handlers, they aren't designed to handle files produced by other applications.
+      Instead, the disk cleanup manager is designed to be flexible and extensible by enabling any developer to implement and register their own disk cleanup handler.
+      Any developer can extend the available disk cleanup services by implementing and registering a disk cleanup handler. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 12). Known false positives: Legitimate new entry added by windows. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id d4f4e0be-cf12-439f-9e25-4e2cdcf7df5a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_add/registry_add_persistence_disk_cleanup_handler_entry.yml
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation = "registry_key_created" and ((xdm.event.operation = "registry_key_created" and xdm.target.registry.path contains "\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\") and not ((xdm.target.registry.path ~= "(?:\\\\Active Setup Temp Folders|\\\\BranchCache|\\\\Content Indexer Cleaner|\\\\D3D Shader Cache|\\\\Delivery Optimization Files|\\\\Device Driver Packages|\\\\Diagnostic Data Viewer database files|\\\\Downloaded Program Files|\\\\DownloadsFolder|\\\\Feedback Hub Archive log files|\\\\Internet Cache Files|\\\\Language Pack|\\\\Microsoft Office Temp Files|\\\\Offline Pages Files|\\\\Old ChkDsk Files)$" or xdm.target.registry.path ~= "(?:\\\\Previous Installations|\\\\Recycle Bin|\\\\RetailDemo Offline Content|\\\\Setup Log Files|\\\\System error memory dump files|\\\\System error minidump files|\\\\Temporary Files|\\\\Temporary Setup Files|\\\\Temporary Sync Files|\\\\Thumbnail Cache|\\\\Update Cleanup|\\\\Upgrade Discarded Files|\\\\User file versions|\\\\Windows Defender|\\\\Windows Error Reporting Files)$" or xdm.target.registry.path ~= "(?:\\\\Windows ESD installation files|\\\\Windows Upgrade Log Files)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 2026.1118.0
+    released: 2026-11-18
+    notes: Converted from the SigmaHQ rules at 698f0912f571d5fac3bf8c51f5421139834a011c.

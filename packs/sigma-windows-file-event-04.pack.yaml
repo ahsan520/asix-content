@@ -1,0 +1,221 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: sigma-windows-file-event-04
+name: "Sigma: Windows file event (4 of 4)"
+description: "9 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows file event events, grouped by tactic Persistence. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires."
+version: 2026.1118.0
+audience: enterprise
+publisher:
+  name: SigmaHQ community, converted for ASIX
+  url: https://github.com/SigmaHQ/sigma
+certification: community
+supported_by: community
+rules_start_off: true
+tags:
+  - sigma
+  - windows
+  - file-event
+license: DRL-1.1
+sources:
+  - Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11)
+rules:
+  - key: suspicious-outlook-macro-created-117d3d3a
+    name: Suspicious Outlook Macro Created
+    description: "Detects the creation of a macro file for Outlook. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 117d3d3a-755c-4a61-b23e-9171146d094c. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_office_outlook_susp_macro_creation.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1137
+      - T1008
+      - T1546
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "\\\\Microsoft\\\\Outlook\\\\VbaProject\\.OTM$" and not (xdm.source.process.executable.path ~= "\\\\outlook\\.exe$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-scheduled-task-write-to-sys-80e1f67a
+    name: Suspicious Scheduled Task Write to System32 Tasks
+    description: "Detects the creation of tasks from processes executed from suspicious locations Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 80e1f67a-4596-4351-98f5-a9c3efabac95. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_task_write.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1053
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path contains "\\Windows\\System32\\Tasks" and xdm.source.process.executable.path ~= "(?:\\\\AppData\\\\|C:\\\\PerfLogs|\\\\Windows\\\\System32\\\\config\\\\systemprofile)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-screensaver-binary-file-cre-97aa2e88
+    name: Suspicious Screensaver Binary File Creation
+    description: |-
+      Adversaries may establish persistence by executing malicious content triggered by user inactivity.
+      Screensavers are programs that execute after a configurable time of user inactivity and consist of Portable Executable (PE) files with a .scr file extension Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 97aa2e88-555c-450d-85a6-229bcd87efb8. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_creation_scr_binary_file.yml
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1546.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "\\.scr$" and not ((xdm.source.process.executable.path ~= "(?:\\\\Kindle\\.exe|\\\\Bin\\\\ccSvcHst\\.exe)$" or (xdm.source.process.executable.path ~= "\\\\TiWorker\\.exe$" and xdm.target.file.path ~= "\\\\uwfservicingscr\\.scr$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: uefi-persistence-via-wpbbin-filecreati-e94b9ddc
+    name: UEFI Persistence Via Wpbbin - FileCreation
+    description: 'Detects creation of a file named "wpbbin" in the "%systemroot%\system32\" directory. Which could be indicative of UEFI based persistence method Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate usage of the file by hardware manufacturer such as lenovo (Thanks @0gtweet for the tip). Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e94b9ddc-eec5-4bb8-8a58-b9dc5f4e185f. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_wpbbin_persistence.yml'
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1542.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "^C:\\\\Windows\\\\System32\\\\wpbbin\\.exe$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: vscode-powershell-profile-modification-3a9fa2ec
+    name: VsCode Powershell Profile Modification
+    description: "Detects the creation or modification of a vscode related powershell profile which could indicate suspicious activity as the profile can be used as a mean of persistence Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate use of the profile by developers or administrators. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3a9fa2ec-30bc-4ebd-b49e-7c9cff225502. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_vscode_powershell_profile.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1546.013
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "\\\\Microsoft\\.VSCode_profile\\.ps1$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: windows-terminal-profile-settings-modi-9b64de98
+    name: Windows Terminal Profile Settings Modification By Uncommon Process
+    description: 'Detects the creation or modification of the Windows Terminal Profile settings file "settings.json" by an uncommon process. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Some false positives may occur with admin scripts that set WT settings.. Sigma rule by frack113, Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9b64de98-9db3-4033-bd7a-f51430105f00. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_windows_terminal_profile.yml'
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1547.015
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path ~= "(?:\\\\cmd\\.exe|\\\\cscript\\.exe|\\\\mshta\\.exe|\\\\powershell\\.exe|\\\\pwsh\\.exe|\\\\wscript\\.exe)$" and xdm.target.file.path ~= "\\\\AppData\\\\Local\\\\Packages\\\\Microsoft\\.WindowsTerminal_8wekyb3d8bbwe\\\\LocalState\\\\settings\\.json$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: winrar-creating-files-in-startup-locat-74a2b37d
+    name: WinRAR Creating Files in Startup Locations
+    description: |-
+      Detects WinRAR creating files in Windows startup locations, which may indicate an attempt to establish persistence by adding malicious files to the Startup folder.
+      This kind of behaviour has been associated with exploitation of WinRAR path traversal vulnerability CVE-2025-6218 or CVE-2025-8088. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 74a2b37d-fea4-41e0-9ac7-c9fbcf1f60cc. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_winrar_file_creation_in_startup_folder.yml
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1547.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path ~= "(?:\\\\WinRAR\\.exe|\\\\Rar\\.exe)$" and xdm.target.file.path contains "\\Start Menu\\Programs\\Startup\\")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: wmi-persistence-script-event-consumer-33f41cdd
+    name: WMI Persistence - Script Event Consumer File Write
+    description: "Detects file writes of WMI script event consumer Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Dell Power Manager (C:\\Program Files\\Dell\\PowerManager\\DpmPowerPlanSetup.exe). Sigma rule by Thomas Patzke, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 33f41cdd-35ac-4ba8-814b-c6a4244a1ad4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_wmi_persistence_script_event_consumer_write.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1546.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.source.process.executable.path ~= "^C:\\\\WINDOWS\\\\system32\\\\wbem\\\\scrcons\\.exe$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: writing-local-admin-share-4aafb0fa
+    name: Writing Local Admin Share
+    description: |-
+      Aversaries may use to interact with a remote network share using Server Message Block (SMB).
+      This technique is used by post-exploitation frameworks. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 4aafb0fa-bff5-4b9d-b99e-8093e659c65f. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_writing_local_admin_share.yml
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1546.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "\\\\\\\\\\\\\\\\127\\.0\\.0" and xdm.target.file.path ~= "\\\\ADMIN\\$\\\\")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 2026.1118.0
+    released: 2026-11-18
+    notes: Converted from the SigmaHQ rules at 698f0912f571d5fac3bf8c51f5421139834a011c.
