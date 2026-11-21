@@ -1,0 +1,271 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: microsoft-entra-id
+name: Microsoft Entra ID
+description: Reads Entra ID sign-in logs and audit logs into the ASIX data model and watches for sign-in guessing, risky sign-ins, privileged role assignments, conditional access changes and new application credentials.
+version: 1.0.0
+audience: enterprise
+publisher:
+  name: ASIX
+certification: community
+supported_by: community
+tags:
+  - microsoft
+  - entra
+  - azure-ad
+  - identity
+  - cloud
+sources:
+  - Microsoft Graph auditLogs/signIns and auditLogs/directoryAudits, or an Entra diagnostic setting (SignInLogs, AuditLogs) sent to an Event Hub
+collection:
+  summary: ASIX can read Entra ID sign-in and audit logs from Microsoft Graph itself (Settings, Cloud sources). If you would rather push the records, send each one to the ASIX HTTP ingestion endpoint with anything that can post JSON (an Azure Function on an Event Hub, Vector, a script).
+  steps:
+    - In Entra ID, register an application (App registrations), add the Microsoft Graph application permission AuditLog.Read.All, grant admin consent, and create a client secret. Sign-in logs need an Entra ID P1 or P2 license.
+    - In ASIX, open Settings, Integrations and add a "Microsoft cloud (Entra app registration)" with the directory (tenant) id, the application (client) id and the secret.
+    - Open Settings, Cloud sources and add "Microsoft Entra ID sign-in logs (Graph)" and, if you want them, "Microsoft Entra ID audit logs (Graph)", both with that account.
+    - Install the parsers and rules of this pack here. Parsed events are stored in the dataset entra_id. Press Read now, then use Search with dataset = entra_id to see events arriving.
+    - 'To push instead of pull: a diagnostic setting (Entra admin center, Monitoring, Diagnostic settings) can stream SignInLogs and AuditLogs to an Event Hub as {"records":[ ... ]}. Create an ingestion key (asix_ik_...) and post one event per record to POST /v1/ingest/http with the header Authorization: Bearer <key>, as {"message": "<the record as JSON text, unchanged>"}.'
+  example: |-
+    curl -X POST https://<your-asix-host>/v1/ingest/http \
+      -H "Authorization: Bearer asix_ik_..." -H "Content-Type: application/json" \
+      -d '[{"message": "{\"userPrincipalName\":\"alice@contoso.com\", ... one sign-in record ... }"}]'
+parsers:
+  - key: signin
+    name: Entra ID sign-in log
+    description: "Each sign-in: the user, the application, the address, whether it worked (error code and reason), the risk level, conditional access result and whether MFA was required."
+    parsing: |-
+      [INGEST:vendor="microsoft", product="entra-id", target_dataset="entra_id", no_hit=keep, content_id="entra_signin"]
+      filter _raw ~= "\"conditionalAccessStatus\"" and _raw ~= "\"userPrincipalName\""
+      | alter
+          event_category = "authentication",
+          _time = arrayindex(regextract(_raw, "\"createdDateTime\"\s{0,3}:\s{0,3}\"([^\"]{1,40})\""), 0),
+          upn = arrayindex(regextract(_raw, "\"userPrincipalName\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          app_name = arrayindex(regextract(_raw, "\"appDisplayName\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          src_ip = arrayindex(regextract(_raw, "\"ipAddress\"\s{0,3}:\s{0,3}\"([^\"]{1,60})\""), 0),
+          error_code = arrayindex(regextract(_raw, "\"errorCode\"\s{0,3}:\s{0,3}\"?([0-9]{1,8})"), 0),
+          failure_reason = arrayindex(regextract(_raw, "\"failureReason\"\s{0,3}:\s{0,3}\"([^\"]{1,200})\""), 0),
+          risk_level = arrayindex(regextract(_raw, "\"riskLevelDuringSignIn\"\s{0,3}:\s{0,3}\"([^\"]{1,20})\""), 0),
+          ca_status = arrayindex(regextract(_raw, "\"conditionalAccessStatus\"\s{0,3}:\s{0,3}\"([^\"]{1,30})\""), 0),
+          client_app = arrayindex(regextract(_raw, "\"clientAppUsed\"\s{0,3}:\s{0,3}\"([^\"]{1,60})\""), 0),
+          auth_requirement = arrayindex(regextract(_raw, "\"authenticationRequirement\"\s{0,3}:\s{0,3}\"([^\"]{1,40})\""), 0),
+          signin_result = if(error_code = "0", "success", "failure");
+    model: |-
+      [MODEL: dataset=entra_id]
+      filter _content_id = "entra_signin"
+      | alter
+          xdm.event.type = "authentication",
+          xdm.event.original_event_type = "entra-signin",
+          xdm.event.operation = "sign-in",
+          xdm.event.outcome = if(signin_result = "success", XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.outcome_reason = failure_reason,
+          xdm.auth.auth_method = if(auth_requirement = "multiFactorAuthentication", "mfa", "password"),
+          xdm.event.description = concat("Entra sign-in ", signin_result, " for ", upn, " to ", app_name, " (risk ", risk_level, ")"),
+          xdm.event.tags = arraycreate(client_app, ca_status, risk_level),
+          xdm.source.ipv4 = if(src_ip contains ":", null, src_ip),
+          xdm.source.ipv6 = if(src_ip contains ":", src_ip, null),
+          xdm.target.user.username = upn,
+          xdm.source.user.username = upn,
+          xdm.target.service.name = app_name;
+    samples:
+      - raw: '{"time":"2026-11-16T10:00:00.1234567Z","operationName":"Sign-in activity","category":"SignInLogs","resultType":"0","callerIpAddress":"203.0.113.9","properties":{"id":"a1","createdDateTime":"2026-11-16T10:00:00Z","userDisplayName":"Alice Smith","userPrincipalName":"alice@contoso.com","appDisplayName":"Azure Portal","ipAddress":"203.0.113.9","clientAppUsed":"Browser","conditionalAccessStatus":"success","isInteractive":true,"riskLevelDuringSignIn":"none","authenticationRequirement":"multiFactorAuthentication","status":{"errorCode":0}}}'
+        expect:
+          upn: alice@contoso.com
+          app_name: Azure Portal
+          src_ip: 203.0.113.9
+          error_code: "0"
+          signin_result: success
+          risk_level: none
+          auth_requirement: multiFactorAuthentication
+        xdm:
+          xdm.event.type: authentication
+          xdm.event.outcome: SUCCESS
+          xdm.auth.auth_method: mfa
+          xdm.source.ipv4: 203.0.113.9
+          xdm.target.user.username: alice@contoso.com
+          xdm.target.service.name: Azure Portal
+      - raw: '{"id":"b2","createdDateTime":"2026-11-16T10:01:00Z","userDisplayName":"Alice Smith","userPrincipalName":"alice@contoso.com","appDisplayName":"Office 365 Exchange Online","ipAddress":"198.51.100.7","clientAppUsed":"IMAP4","conditionalAccessStatus":"notApplied","isInteractive":false,"riskLevelDuringSignIn":"none","authenticationRequirement":"singleFactorAuthentication","status":{"errorCode":50126,"failureReason":"Invalid username or password or Invalid on-premise username or password."}}'
+        expect:
+          error_code: "50126"
+          signin_result: failure
+          client_app: IMAP4
+          src_ip: 198.51.100.7
+        xdm:
+          xdm.event.outcome: FAILED
+          xdm.auth.auth_method: password
+        fires:
+          - signin-failures
+      - raw: '{"id":"c3","createdDateTime":"2026-11-16T10:02:00Z","userDisplayName":"Bob Jones","userPrincipalName":"bob@contoso.com","appDisplayName":"Microsoft Teams","ipAddress":"2001:db8::9","clientAppUsed":"Browser","conditionalAccessStatus":"success","isInteractive":true,"riskLevelDuringSignIn":"high","authenticationRequirement":"singleFactorAuthentication","status":{"errorCode":0}}'
+        expect:
+          risk_level: high
+          src_ip: 2001:db8::9
+        xdm:
+          xdm.source.ipv6: 2001:db8::9
+          xdm.event.outcome: SUCCESS
+        fires:
+          - risky-signin
+  - key: audit
+    name: Entra ID audit log
+    description: "Directory changes: who did what (role assignments, users, groups, applications, policies), from where, and the result."
+    parsing: |-
+      [INGEST:vendor="microsoft", product="entra-id", target_dataset="entra_id", no_hit=keep, content_id="entra_audit"]
+      filter _raw ~= "\"activityDisplayName\""
+      | alter
+          event_category = "cloud_api",
+          _time = arrayindex(regextract(_raw, "\"activityDateTime\"\s{0,3}:\s{0,3}\"([^\"]{1,40})\""), 0),
+          activity = arrayindex(regextract(_raw, "\"activityDisplayName\"\s{0,3}:\s{0,3}\"([^\"]{1,150})\""), 0),
+          audit_category = arrayindex(regextract(_raw, "\"category\"\s{0,3}:\s{0,3}\"([^\"]{1,60})\""), 0),
+          audit_result = arrayindex(regextract(_raw, "\"result\"\s{0,3}:\s{0,3}\"([^\"]{1,20})\""), 0),
+          initiator = arrayindex(regextract(_raw, "\"userPrincipalName\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          src_ip = arrayindex(regextract(_raw, "\"ipAddress\"\s{0,3}:\s{0,3}\"([^\"]{1,60})\""), 0);
+    model: |-
+      [MODEL: dataset=entra_id]
+      filter _content_id = "entra_audit"
+      | alter
+          xdm.event.type = if(audit_category in ("UserManagement", "RoleManagement", "GroupManagement"), "account_management", "cloud_api"),
+          xdm.event.original_event_type = "entra-audit",
+          xdm.event.operation = activity,
+          xdm.event.outcome = if(audit_result = "success", XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.description = concat("Entra audit: ", activity, " (", audit_category, ") by ", initiator, ", ", audit_result),
+          xdm.event.tags = arraycreate(audit_category),
+          xdm.source.ipv4 = if(src_ip contains ":", null, src_ip),
+          xdm.source.ipv6 = if(src_ip contains ":", src_ip, null),
+          xdm.source.user.username = initiator;
+    samples:
+      - raw: '{"id":"d4","category":"RoleManagement","result":"success","activityDisplayName":"Add member to role","activityDateTime":"2026-11-16T10:03:00Z","loggedByService":"Core Directory","initiatedBy":{"user":{"id":"u1","displayName":"Admin One","userPrincipalName":"admin@contoso.com","ipAddress":"203.0.113.9"}},"targetResources":[{"id":"t1","displayName":"Global Administrator","type":"Role"}]}'
+        expect:
+          activity: Add member to role
+          audit_category: RoleManagement
+          audit_result: success
+          initiator: admin@contoso.com
+          src_ip: 203.0.113.9
+        xdm:
+          xdm.event.type: account_management
+          xdm.event.operation: Add member to role
+          xdm.event.outcome: SUCCESS
+          xdm.source.user.username: admin@contoso.com
+        fires:
+          - privileged-role-assigned
+      - raw: '{"id":"d4","category":"Policy","result":"success","activityDisplayName":"Update conditional access policy","activityDateTime":"2026-11-16T10:03:00Z","loggedByService":"Core Directory","initiatedBy":{"user":{"id":"u1","displayName":"Admin One","userPrincipalName":"admin@contoso.com","ipAddress":"203.0.113.9"}},"targetResources":[{"id":"t1","displayName":"Global Administrator","type":"Role"}]}'
+        expect:
+          activity: Update conditional access policy
+          audit_category: Policy
+        xdm:
+          xdm.event.type: cloud_api
+        fires:
+          - conditional-access-changed
+      - raw: '{"id":"d4","category":"ApplicationManagement","result":"success","activityDisplayName":"Add service principal credentials","activityDateTime":"2026-11-16T10:03:00Z","loggedByService":"Core Directory","initiatedBy":{"user":{"id":"u1","displayName":"Admin One","userPrincipalName":"admin@contoso.com","ipAddress":"203.0.113.9"}},"targetResources":[{"id":"t1","displayName":"Global Administrator","type":"Role"}]}'
+        expect:
+          activity: Add service principal credentials
+        xdm:
+          xdm.event.operation: Add service principal credentials
+        fires:
+          - app-credential-added
+rules:
+  - key: signin-failures
+    name: "Entra ID: many failed sign-ins from one address"
+    description: Ten or more failed sign-ins from one address in 10 minutes. Password guessing or password spraying against Microsoft 365 accounts.
+    kind: correlation
+    severity: medium
+    category: Credential Access
+    mitre:
+      - T1110.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "entra-signin" and xdm.event.outcome = "FAILED"
+      group_by: field:xdm.source.ipv4
+      threshold: 10
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: risky-signin
+    name: "Entra ID: sign-in flagged high risk"
+    description: Entra ID Protection rated this sign-in high risk (leaked credentials, impossible travel, anonymous address). Check the user and revoke sessions if it was not them.
+    kind: bioc
+    severity: high
+    category: Initial Access
+    mitre:
+      - T1078.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "entra-signin" and xdm.event.description ~= "\\(risk high\\)$"
+      group_by: field:xdm.target.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: privileged-role-assigned
+    name: "Entra ID: member added to a directory role"
+    description: A user or service was added to an Entra ID role (permanent or eligible). Check the role and that it was approved.
+    kind: bioc
+    severity: high
+    category: Privilege Escalation
+    mitre:
+      - T1098.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "entra-audit" and xdm.event.outcome = "SUCCESS" and xdm.event.operation ~= "^Add (eligible )?member to role"
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: conditional-access-changed
+    name: "Entra ID: conditional access policy changed"
+    description: A conditional access policy was added, changed or deleted. These policies enforce MFA and block risky sign-ins.
+    kind: bioc
+    severity: medium
+    category: Defense Evasion
+    mitre:
+      - T1562
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "entra-audit" and xdm.event.outcome = "SUCCESS" and xdm.event.operation ~= "conditional access policy"
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: app-credential-added
+    name: "Entra ID: new secret or certificate on an application"
+    description: A credential was added to an application or service principal. A common way to keep access to a tenant after a compromise.
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1098.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "entra-audit" and xdm.event.outcome = "SUCCESS" and xdm.event.operation ~= "^(Add service principal credentials|Update application . Certificates and secrets management)"
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+history:
+  - version: 1.0.0
+    released: 2026-11-16
+    notes: "First release: sign-in and audit parsers, data model mapping, five detections."

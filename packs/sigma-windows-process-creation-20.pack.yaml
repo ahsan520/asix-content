@@ -1,0 +1,1103 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: sigma-windows-process-creation-20
+name: "Sigma: Windows process creation (20 of 24)"
+description: "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires."
+version: 2026.1118.0
+audience: enterprise
+publisher:
+  name: SigmaHQ community, converted for ASIX
+  url: https://github.com/SigmaHQ/sigma
+certification: community
+supported_by: community
+rules_start_off: true
+tags:
+  - sigma
+  - windows
+  - process-creation
+license: DRL-1.1
+sources:
+  - Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1)
+  - "Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage)"
+rules:
+  - key: remote-file-download-via-findstr-exe-587254ee
+    name: Remote File Download Via Findstr.EXE
+    description: 'Detects execution of "findstr" with specific flags and a remote share path. This specific set of CLI flags would allow "findstr" to download the content of the file located on the remote share as described in the LOLBAS entry. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Furkan CALISKAN, @caliskanfurkan_, @oscd_initiative, Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 587254ee-a24b-4335-b3cd-065c0f1f4baa. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_findstr_download.yml'
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1218
+      - T1564.004
+      - T1552.001
+      - T1105
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.command_line contains "findstr" or xdm.target.process.executable.path ~= "findstr\\.exe$" or xdm.target.process.original_file_name ~= "^FINDSTR\\.EXE$") and (xdm.target.process.command_line ~= " [-/–—―]v " and xdm.target.process.command_line ~= " [-/–—―]l " and xdm.target.process.command_line contains "\\\\\\\\"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: remote-xsl-execution-via-msxsl-exe-75d0a94e
+    name: Remote XSL Execution Via Msxsl.EXE
+    description: 'Detects the execution of the "msxsl" binary with an "http" keyword in the command line. This might indicate a potential remote execution of XSL files. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Msxsl is not installed by default and is deprecated, so unlikely on most systems.. Sigma rule by Swachchhanda Shrawan Poudel, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 75d0a94e-6252-448d-a7be-d953dff527bb. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_msxsl_remote_execution.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1220
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\msxsl\\.exe$" and xdm.target.process.command_line contains "http")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: remotefxvgpudisablement-abuse-via-atom-a6fc3c46
+    name: RemoteFXvGPUDisablement Abuse Via AtomicTestHarnesses
+    description: 'Detects calls to the AtomicTestHarnesses "Invoke-ATHRemoteFXvGPUDisablementCommand" which is designed to abuse the "RemoteFXvGPUDisablement.exe" binary to run custom PowerShell code via module load-order hijacking. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a6fc3c46-23b8-4996-9ea2-573f4c4d88c5. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_powershell_remotefxvgpudisablement_abuse.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1218
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and xdm.target.process.command_line ~= "(?:Invoke-ATHRemoteFXvGPUDisablementCommand|Invoke-ATHRemoteFXvGPUDisableme)"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-autohotkey-exe-execution-0f16d9cf
+    name: Renamed AutoHotkey.EXE Execution
+    description: "Detects execution of a renamed autohotkey.exe binary based on PE metadata fields Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0f16d9cf-0616-45c8-8fad-becc11b5a41c. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_autohotkey.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.product contains "AutoHotkey" or xdm.target.process.description contains "AutoHotkey" or xdm.target.process.original_file_name ~= "^(?:AutoHotkey\\.exe|AutoHotkey\\.rc)$") and not ((xdm.target.process.executable.path ~= "(?:\\\\AutoHotkey\\.exe|\\\\AutoHotkey32\\.exe|\\\\AutoHotkey32_UIA\\.exe|\\\\AutoHotkey64\\.exe|\\\\AutoHotkey64_UIA\\.exe|\\\\AutoHotkeyA32\\.exe|\\\\AutoHotkeyA32_UIA\\.exe|\\\\AutoHotkeyU32\\.exe|\\\\AutoHotkeyU32_UIA\\.exe|\\\\AutoHotkeyU64\\.exe|\\\\AutoHotkeyU64_UIA\\.exe)$" or xdm.target.process.executable.path contains "\\AutoHotkey")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-autoit-execution-f4264e47
+    name: Renamed AutoIt Execution
+    description: |-
+      Detects the execution of a renamed AutoIt2.exe or AutoIt3.exe.
+      AutoIt is a scripting language and automation tool for Windows systems. While primarily used for legitimate automation tasks, it can be misused in cyber attacks.
+      Attackers can leverage AutoIt to create and distribute malware, including keyloggers, spyware, and botnets. A renamed AutoIt executable is particularly suspicious. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f4264e47-f522-4c38-a420-04525d5b880f. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_autoit.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1027
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and ((xdm.target.process.command_line ~= "(?: /AutoIt3ExecuteScript| /ErrorStdOut)" or xdm.target.process.hashes ~= "(?:IMPHASH=FDC554B3A8683918D731685855683DDF|IMPHASH=CD30A61B60B3D60CECDB034C8C83C290|IMPHASH=F8A00C72F2D667D2EDBB234D0C0AE000)" or xdm.target.process.original_file_name ~= "^(?:AutoIt3\\.exe|AutoIt2\\.exe|AutoIt\\.exe)$") and not (xdm.target.process.executable.path ~= "(?:\\\\AutoIt\\.exe|\\\\AutoIt2\\.exe|\\\\AutoIt3_x64\\.exe|\\\\AutoIt3\\.exe)$"))'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-boinc-client-execution-30d07da2
+    name: Renamed BOINC Client Execution
+    description: "Detects the execution of a renamed BOINC binary. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Matt Anderson (Huntress), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 30d07da2-83ab-45d8-ae75-ec7c0edcaffc. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_boinc.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1553
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.original_file_name ~= "^BOINC\\.exe$" and not (xdm.target.process.executable.path ~= "\\\\BOINC\\.exe$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-browsercore-exe-execution-8a4519e8
+    name: Renamed BrowserCore.EXE Execution
+    description: "Detects process creation with a renamed BrowserCore.exe (used to extract Azure tokens) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Max Altgelt (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8a4519e8-e64a-40b6-ae85-ba8ad2177559. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_browsercore.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1528
+      - T1036.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.original_file_name ~= "^BrowserCore\\.exe$" and not (xdm.target.process.executable.path ~= "\\\\BrowserCore\\.exe$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-cloudflared-exe-execution-e0c69ebd
+    name: Renamed Cloudflared.EXE Execution
+    description: 'Detects the execution of a renamed "cloudflared" binary. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e0c69ebd-b54f-4aed-8ae3-e3467843f3f0. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_cloudflared.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1090.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((((xdm.target.process.command_line ~= " tunnel " and xdm.target.process.command_line ~= "cleanup ") and xdm.target.process.command_line ~= "(?:-config |-connector-id )") or ((xdm.target.process.command_line ~= " tunnel " and xdm.target.process.command_line ~= " run ") and xdm.target.process.command_line ~= "(?:-config |-credentials-contents |-credentials-file |-token )") or (xdm.target.process.command_line ~= "-url" and xdm.target.process.command_line ~= "tunnel") or (xdm.target.process.hashes ~= "(?:SHA256=2fb6c04c4f95fb8d158af94c137f90ac820716deaf88d8ebec956254e046cb29|SHA256=b3d21940a10fdef5e415ad70331ce257c24fe3bcf7722262302e0421791f87e8|SHA256=1fbd8362b2d2d2e6a5750ae3db69cd1815e6c1d31da48a98b796450971a8e039|SHA256=0409c9b12f9d0eda86e461ed9bdabeefb00172b26322079681a0bdf48e68dc28|SHA256=7cfb411d04bac42ef93d1f0c93c0a481e38c6f4612b97ae89d4702595988edc7)" or xdm.target.process.hashes ~= "(?:SHA256=5b3c2d846ab162dc6bc595cce3a49de5731afde5d6060be7066d21b013a28373|SHA256=ce95df7f69664c3df19b76028e115931919a71517b776da7b42d353e2ff4a670|SHA256=1293525a19cfe3bc8296b62fbfe19f083632ed644a1c18c10b045a1d3030d81a|SHA256=af2b9161cfcb654b16408cd6b098afe9d1fb61a037d18d7090a119d4c0c8e0f0|SHA256=39ddceb56a15798826a5fc4892fa2b474c444bb4d7a8bf2fa95e41cab10fa7a1)" or xdm.target.process.hashes ~= "(?:SHA256=ccd11f2328023a0e7929e845d5b6e7bc783fb4650d65faef3ae090239d4bbce2|SHA256=b6e5c5d2567ae8c69cc012ebcae30e6c9b5359d64a58d17ba75ec89f8bce71ac|SHA256=f813484ea441404f18caad96f28138e8aaf0cb256163c09c2ab8a3acab87f69f|SHA256=fc4a0802ab9c7409b892ca00636bec61e2acfc911bccfdeb9978b8ab5a2f828d|SHA256=083150724b49604c8765c1ba19541fa260b133be0acb0647fcd936d81f054499)" or xdm.target.process.hashes ~= "(?:SHA256=44303d6572956f28a0f2e4b188934fb9874f2584f5c81fa431a463cfbf28083b|SHA256=5d38c46032a58e28ae5f7d174d8761ec3d64d186677f3ec53af5f51afb9bfd2f|SHA256=e1e70fa42059911bc6685fafef957f9a73fc66f214d0704a9b932683a5204032|SHA256=c01356092a365b84f84f0e66870bd1a05ba3feb53cafd973fa5fea2534bee234|SHA256=b3f9c06151e30ee43d39e788a79cd918a314f24e04fe87f3de8272a2057b624f)" or xdm.target.process.hashes ~= "(?:SHA256=cd81b2792f0739f473c31c9cb7cf2313154bfa28b839975802b90e8790bb5058|SHA256=9ec7e6c8e1bfd883663d8d9d62c9e4f9ae373b731407181e32491b27a7218a2c|SHA256=c2cfd23fdc6c0e1b1ffa0e545cbe556f18d11b362b4a89ba0713f6ab01c4827f|SHA256=53f8adbd76c0eb16f5e43cadde422474d8a06f9c8f959389c1930042ad8beaa5|SHA256=648c8d2f8001c113d2986dd00b7bbd181593d462bef73522cee212c4f71f95b3)" or xdm.target.process.hashes ~= "(?:SHA256=ae047e2095e46c3f9c518b2be67ec753f4f0aad23b261a361fcb6144dcdb63b4|SHA256=3153d2baa462978dd22ab33d1c2274ecc88c200225d6a3327f98d5b752d08f5c|SHA256=f49cde976e628012c9db73e1c8d76081944ecf2297cdafeb78bb13290da274c4|SHA256=d2513e58bb03ccc83affde685c6ef987924c37ce6707d8e9857e2524b0d7e90f|SHA256=bb67c7623ba92fe64ffd9816b8d5b3b1ea3013960a30bd4cf6e295b3eb5b1bad)" or xdm.target.process.hashes ~= "(?:SHA256=b34b3c3a91e3165d1481f0b3ec23eab93a1cfba94345a6cbfe5b18ddbd48eac7|SHA256=f7848034e010d55f15e474ca998f96391e320ff29b00cfcc4c5e536529703e75|SHA256=b6fc9493778cbe3bfc062d73f5cc604bc0ff058bc5e5dc6aac87f3a4008b54b6|SHA256=f5c5e962577e2293c4ad10603816dce7cc273585969615fbf4e4bfa9eaff1688|SHA256=d14c52d9220b606f428a8fe9f7c108b0d6f14cf71e7384749e98e6a95962e68f)" or xdm.target.process.hashes ~= "(?:SHA256=d3a0e1a79158f3985cd49607ebe0cdfcc49cb9af96b8f43aefd0cdfe2f22e663|SHA256=2fbbfc8299537ff80cadf9d0e27c223fe0ccb9052bf9d8763ad717bbfa521c77|SHA256=19074674c6fbdaa573b3081745e5e26144fdf7a086d14e0e220d1814f1f13078)")) and not (xdm.target.process.executable.path ~= "(?:\\\\cloudflared\\.exe|\\\\cloudflared-windows-386\\.exe|\\\\cloudflared-windows-amd64\\.exe)$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-createdump-utility-execution-1a1ed54a
+    name: Renamed CreateDump Utility Execution
+    description: "Detects uses of a renamed legitimate createdump.exe LOLOBIN utility to dump process memory Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Command lines that use the same flags. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 1a1ed54a-2ba4-4221-94d5-01dee560d71e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_createdump.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1036
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.original_file_name ~= "^FX_VER_INTERNALNAME_STR$" or ((xdm.target.process.command_line ~= " -u " and xdm.target.process.command_line ~= " -f " and xdm.target.process.command_line ~= "\\.dmp") or (xdm.target.process.command_line ~= " --full " and xdm.target.process.command_line ~= " --name " and xdm.target.process.command_line ~= "\\.dmp"))) and not (xdm.target.process.executable.path ~= "\\\\createdump\\.exe$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-mavinject-exe-execution-e6474a1b
+    name: Renamed Mavinject.EXE Execution
+    description: 'Detects the execution of a renamed version of the "Mavinject" process. Which can be abused to perform process injection using the "/INJECTRUNNING" flag Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by frack113, Florian Roth, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e6474a1b-5390-49cd-ab41-8d88655f7394. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_mavinject.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1055.001
+      - T1218.013
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.original_file_name ~= "^(?:mavinject32\\.exe|mavinject64\\.exe)$" and not (xdm.target.process.executable.path ~= "(?:\\\\mavinject32\\.exe|\\\\mavinject64\\.exe)$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-megasync-execution-643bdcac
+    name: Renamed MegaSync Execution
+    description: "Detects the execution of a renamed MegaSync.exe as seen used by ransomware families like Nefilim, Sodinokibi, Pysa, and Conti. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Software that illegally integrates MegaSync in a renamed form; Administrators that have renamed MegaSync. Sigma rule by Sittikorn S, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 643bdcac-8b82-49f4-9fd9-25a90b929f3b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_megasync.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1218
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.original_file_name ~= "^megasync\\.exe$" and not (xdm.target.process.executable.path ~= "\\\\megasync\\.exe$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-microsoft-teams-execution-88f46b67
+    name: Renamed Microsoft Teams Execution
+    description: "Detects the execution of a renamed Microsoft Teams binary. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 88f46b67-14d4-4f45-ac2c-d66984f22191. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_msteams.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.original_file_name ~= "^(?:msteams\\.exe|teams\\.exe)$" and not (xdm.target.process.executable.path ~= "(?:\\\\msteams\\.exe|\\\\teams\\.exe)$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-msdt-exe-execution-bd1c6866
+    name: Renamed Msdt.EXE Execution
+    description: 'Detects the execution of a renamed "Msdt.exe" binary Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by pH-T (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id bd1c6866-65fc-44b2-be51-5588fcff82b9. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_msdt.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1036.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.original_file_name ~= "^msdt\\.exe$" and not (xdm.target.process.executable.path ~= "\\\\msdt\\.exe$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-netsupport-rat-execution-0afbd410
+    name: Renamed NetSupport RAT Execution
+    description: 'Detects the execution of a renamed "client32.exe" (NetSupport RAT) via Imphash, Product and OriginalFileName strings Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0afbd410-de03-4078-8491-f132303cb67d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_netsupport_rat.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.product contains "NetSupport Remote Control" or xdm.target.process.original_file_name contains "client32.exe" or xdm.target.process.hashes contains "IMPHASH=A9D50692E95B79723F3E76FCF70D023E") and not (xdm.target.process.executable.path ~= "\\\\client32\\.exe$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-office-binary-execution-0b0cd537
+    name: Renamed Office Binary Execution
+    description: "Detects the execution of a renamed office binary Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0b0cd537-fc77-4e6e-a973-e53495c1083d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_office_processes.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1036.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.original_file_name ~= "^(?:Excel\\.exe|MSACCESS\\.EXE|MSPUB\\.EXE|OneNote\\.exe|OneNoteM\\.exe|OUTLOOK\\.EXE|POWERPNT\\.EXE|WinWord\\.exe|Olk\\.exe)$" or xdm.target.process.description ~= "^(?:Microsoft Access|Microsoft Excel|Microsoft OneNote|Microsoft Outlook|Microsoft PowerPoint|Microsoft Publisher|Microsoft Word|Sent to OneNote Tool)$") and not (xdm.target.process.executable.path ~= "(?:\\\\EXCEL\\.exe|\\\\excelcnv\\.exe|\\\\MSACCESS\\.exe|\\\\MSPUB\\.EXE|\\\\ONENOTE\\.EXE|\\\\ONENOTEM\\.EXE|\\\\OUTLOOK\\.EXE|\\\\POWERPNT\\.EXE|\\\\WINWORD\\.exe|\\\\OLK\\.EXE)$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-paexec-execution-c4e49831
+    name: Renamed PAExec Execution
+    description: 'Detects execution of renamed version of PAExec. Often used by attackers Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Weird admins that rename their tools; Software companies that bundle PAExec with their software and rename it, so that it is less embarrassing; When executed with the "-s" flag. PAExec will copy itself to the "C:\Windows\" directory with a different name. Usually like this "PAExec-[XXXXX]-[ComputerName]". Sigma rule by Florian Roth (Nextron Systems), Jason Lynch, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c4e49831-1496-40cf-8ce1-b53f942b02f9. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_paexec.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1202
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.description ~= "^PAExec Application$" or xdm.target.process.original_file_name ~= "^PAExec\\.exe$" or xdm.target.process.product contains "PAExec" or xdm.target.process.hashes ~= "(?:IMPHASH=11D40A7B7876288F919AB819CC2D9802|IMPHASH=6444f8a34e99b8f7d9647de66aabe516|IMPHASH=dfd6aa3f7b2b1035b76b718f1ddc689f|IMPHASH=1a6cca4d5460b1710a12dea39e4a592c)") and not ((xdm.target.process.executable.path ~= "\\\\paexec\\.exe$" or xdm.target.process.executable.path ~= "^C:\\\\Windows\\\\PAExec-")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-plink-execution-1c12727d
+    name: Renamed Plink Execution
+    description: "Detects the execution of a renamed version of the Plink binary Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 1c12727d-02bf-45ff-a9f3-d49806a3cf43. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_plink.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1036
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.original_file_name ~= "^Plink$" or (xdm.target.process.command_line ~= " -l forward" and xdm.target.process.command_line ~= " -P " and xdm.target.process.command_line ~= " -R ")) and not (xdm.target.process.executable.path ~= "\\\\plink\\.exe$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-procdump-execution-4a0b2c7e
+    name: Renamed ProcDump Execution
+    description: |-
+      Detects the execution of a renamed ProcDump executable.
+      This often done by attackers or malware in order to evade defensive mechanisms. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Procdump illegally bundled with legitimate software.; Administrators who rename binaries (should be investigated).. Sigma rule by Florian Roth (Nextron Systems), Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 4a0b2c7e-7cb2-495d-8b63-5f268e7bfd67. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_sysinternals_procdump.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1036.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and ((xdm.target.process.original_file_name ~= "^procdump$" or (xdm.target.process.command_line ~= "(?: [-/–—―]ma | [-/–—―]mp )" and xdm.target.process.command_line ~= " [-/–—―]accepteula")) and not (xdm.target.process.executable.path ~= "(?:\\\\procdump\\.exe|\\\\procdump64\\.exe|\\\\procdump64a\\.exe)$"))'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-sysinternals-debugview-executi-cd764533
+    name: Renamed SysInternals DebugView Execution
+    description: "Detects suspicious renamed SysInternals DebugView execution Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id cd764533-2e07-40d6-a718-cfeec7f2da7f. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_sysinternals_debugview.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1588.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.product ~= "^Sysinternals DebugView$" and not ((xdm.target.process.original_file_name ~= "^Dbgview\\.exe$" and xdm.target.process.executable.path ~= "\\\\Dbgview\\.exe$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-visual-studio-code-tunnel-exec-2cf29f11
+    name: Renamed Visual Studio Code Tunnel Execution
+    description: "Detects renamed Visual Studio Code tunnel execution. Attackers can abuse this functionality to establish a C2 channel Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 2cf29f11-e356-4f61-98c0-1bdb9393d6da. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_vscode_tunnel_renamed_execution.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1071.001
+      - T1219
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((((not (xdm.target.process.original_file_name ~= ".") and xdm.target.process.command_line ~= "\\.exe tunnel$") or (xdm.target.process.command_line ~= "\\.exe tunnel" and xdm.target.process.command_line ~= "--accept-server-license-terms") or (xdm.target.process.command_line ~= "tunnel " and xdm.target.process.command_line ~= "service" and xdm.target.process.command_line ~= "internal-run" and xdm.target.process.command_line ~= "tunnel-service\\.log")) and not (xdm.target.process.executable.path ~= "(?:\\\\code-tunnel\\.exe|\\\\code\\.exe)$")) or ((xdm.source.process.command_line ~= " tunnel$" and xdm.target.process.executable.path ~= "\\\\cmd\\.exe$" and (xdm.target.process.command_line ~= "/d /c " and xdm.target.process.command_line ~= "\\\\servers\\\\Stable-" and xdm.target.process.command_line ~= "code-server\\.cmd")) and not (xdm.source.process.executable.path ~= "(?:\\\\code-tunnel\\.exe|\\\\code\\.exe)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: renamed-zoho-dctask64-execution-340a090b
+    name: Renamed ZOHO Dctask64 Execution
+    description: |-
+      Detects a renamed "dctask64.exe" execution, a signed binary by ZOHO Corporation part of ManageEngine Endpoint Central.
+      This binary can be abused for DLL injection, arbitrary command and process execution. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 340a090b-c4e9-412e-bb36-b4b16fe96f9b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_renamed_dctask64.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1036
+      - T1055.001
+      - T1202
+      - T1218
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.hashes ~= "(?:IMPHASH=6834B1B94E49701D77CCB3C0895E1AFD|IMPHASH=1BB6F93B129F398C7C4A76BB97450BBA|IMPHASH=FAA2AC19875FADE461C8D89DCF2710A3|IMPHASH=F1039CED4B91572AB7847D26032E6BBF)" and not (xdm.target.process.executable.path ~= "\\\\dctask64\\.exe$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: replace-exe-usage-9292293b
+    name: Replace.exe Usage
+    description: "Detects the use of Replace.exe which can be used to replace file with another file Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9292293b-8496-4715-9db6-37028dcda4b3. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_lolbin_replace.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1105
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\replace\\.exe$" and xdm.target.process.command_line ~= "[-/–—―]a")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: response-file-execution-via-odbcconf-e-5f03babb
+    name: Response File Execution Via Odbcconf.EXE
+    description: 'Detects execution of "odbcconf" with the "-f" flag in order to load a response file which might contain a malicious action. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: The rule is looking for any usage of response file, which might generate false positive when this function is used legitimately. Investigate the contents of the ".rsp" file to determine if it is malicious and apply additional filters if necessary.. Sigma rule by Kirill Kiryanov, Beyu Denis, Daniil Yugoslavskiy, oscd.community, Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 5f03babb-12db-4eec-8c82-7b4cb5580868. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_odbcconf_response_file.yml'
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1218.008
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\odbcconf\\.exe$" or xdm.target.process.original_file_name ~= "^odbcconf\\.exe$") and xdm.target.process.command_line ~= " [-/–—―]f " and xdm.target.process.command_line contains ".rsp")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: root-certificate-installed-from-susp-l-5f6a601c
+    name: Root Certificate Installed From Susp Locations
+    description: "Adversaries may install a root certificate on a compromised system to avoid warnings when connecting to adversary controlled web servers. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 5f6a601c-2ecb-498b-9c33-660362323afa. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_powershell_import_cert_susp_locations.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1553.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.command_line ~= "Import-Certificate" and xdm.target.process.command_line ~= " -FilePath " and xdm.target.process.command_line ~= "Cert:\\\\LocalMachine\\\\Root") and xdm.target.process.command_line ~= "(?:\\\\AppData\\\\Local\\\\Temp\\\\|:\\\\Windows\\\\TEMP\\\\|\\\\Desktop\\\\|\\\\Downloads\\\\|\\\\Perflogs\\\\|:\\\\Users\\\\Public\\\\)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: run-powershell-script-from-ads-45a594aa
+    name: Run PowerShell Script from ADS
+    description: "Detects PowerShell script execution from Alternate Data Stream (ADS) Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by Sergey Soldatov, Kaspersky Lab, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 45a594aa-1fbd-4972-a809-ff5a99dd81b8. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_powershell_run_script_from_ads.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1564.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.source.process.executable.path ~= "(?:\\\\powershell\\.exe|\\\\pwsh\\.exe)$" and xdm.target.process.executable.path ~= "(?:\\\\powershell\\.exe|\\\\pwsh\\.exe)$" and (xdm.target.process.command_line ~= "Get-Content" and xdm.target.process.command_line ~= "-Stream"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: rundll32-execution-with-uncommon-dll-e-c3a99af4
+    name: Rundll32 Execution With Uncommon DLL Extension
+    description: "Detects the execution of rundll32 with a command line that doesn't contain a common extension Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Tim Shelton, Florian Roth (Nextron Systems), Yassine Oukessou, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c3a99af4-35a9-4668-879e-c09aeb4f2bdf. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_rundll32_uncommon_dll_extension.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1218.011
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\rundll32\\.exe$" or xdm.target.process.original_file_name ~= "^RUNDLL32\\.EXE$") and not ((not (xdm.target.process.command_line ~= ".") or not (xdm.target.process.command_line ~= ".") or (xdm.target.process.command_line ~= "(?:\\.cpl |\\.cpl,|\\.cpl\"|\\.cpl'|\\.dll |\\.dll,|\\.dll\"|\\.dll'|\\.inf |\\.inf,|\\.inf\"|\\.inf')" or xdm.target.process.command_line ~= "(?:\\.cpl|\\.dll|\\.inf)$") or xdm.target.process.command_line contains " -localserver " or (xdm.source.process.executable.path ~= "\\\\msiexec\\.exe$" and (xdm.target.process.command_line ~= ":\\\\Windows\\\\Installer\\\\" and xdm.target.process.command_line ~= "\\.tmp" and xdm.target.process.command_line ~= "zzzzInvokeManagedCustomActionOutOfProc")) or (xdm.target.process.executable.path ~= "^C:\\\\Windows\\\\System32\\\\rundll32\\.exe$" and xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\System32\\\\svchost\\.exe$" and xdm.target.process.command_line contains " streamci,StreamingDeviceSetup {"))) and not ((xdm.source.process.command_line ~= ":\\\\Users\\\\" and xdm.source.process.command_line ~= "\\\\AppData\\\\Local\\\\Microsoft\\\\EdgeUpdate\\\\Install\\\\\\{" and xdm.source.process.command_line ~= "\\\\EDGEMITMP_" and xdm.source.process.command_line ~= "\\.tmp\\\\setup\\.exe" and xdm.source.process.command_line ~= "--install-archive=" and xdm.source.process.command_line ~= "--previous-version=" and xdm.source.process.command_line ~= "--msedgewebview --verbose-logging --do-not-launch-msedge --user-level")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: rundll32-execution-without-commandline-1775e15e
+    name: Rundll32 Execution Without CommandLine Parameters
+    description: "Detects suspicious start of rundll32.exe without any parameters as found in CobaltStrike beacon activity Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Possible but rare. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 1775e15e-b61b-4d14-a1a3-80981298085a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_rundll32_no_params.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1202
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.command_line ~= "(?:\\\\rundll32\\.exe|\\\\rundll32\\.exe\"|\\\\rundll32)$" and not (xdm.source.process.executable.path ~= "(?:\\\\AppData\\\\Local\\\\|\\\\Microsoft\\\\Edge\\\\)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: rundll32-installscreensaver-execution-15bd98ea
+    name: Rundll32 InstallScreenSaver Execution
+    description: "An attacker may execute an application as a SCR File using rundll32.exe desk.cpl,InstallScreenSaver Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Legitimate installation of a new screensaver. Sigma rule by Christopher Peacock @securepeacock, SCYTHE @scythe_io, TactiKoolSec, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 15bd98ea-55f4-4d37-b09a-e7caa0fa2221. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_rundll32_installscreensaver.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1218.011
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\rundll32\\.exe$" or xdm.target.process.original_file_name ~= "^RUNDLL32\\.EXE$") and xdm.target.process.command_line contains "InstallScreenSaver")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: rundll32-spawned-via-explorer-exe-1723e720
+    name: Rundll32 Spawned Via Explorer.EXE
+    description: 'Detects execution of "rundll32.exe" with a parent process of Explorer.exe. This has been observed by variants of Raspberry Robin, as first reported by Red Canary. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by CD_ROM_, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 1723e720-616d-4ddc-ab02-f7e3685a4713. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_rundll32_parent_explorer.yml'
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.source.process.executable.path ~= "\\\\explorer\\.exe$" and (xdm.target.process.executable.path ~= "\\\\rundll32\\.exe$" or xdm.target.process.original_file_name ~= "^RUNDLL32\\.EXE$")) and not ((xdm.target.process.command_line contains " C:\\Windows\\System32\\" or xdm.target.process.command_line ~= " -localserver 22d8c27b-47a1-48d1-ad08-7da7abd79617$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: rundll32-spawning-explorer-caa06de8
+    name: RunDLL32 Spawning Explorer
+    description: "Detects RunDLL32.exe spawning explorer.exe as child, which is very uncommon, often observes Gamarue spawning the explorer.exe process in an unusual way Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by elhoim, CD_ROM_, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id caa06de8-fdef-4c91-826a-7f9e163eef4b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_rundll32_spawn_explorer.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1218.011
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.source.process.executable.path ~= "\\\\rundll32\\.exe$" and xdm.target.process.executable.path ~= "\\\\explorer\\.exe$") and not (xdm.source.process.command_line contains "\\shell32.dll,Control_RunDLL"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: runmru-registry-key-deletion-c11aecef
+    name: RunMRU Registry Key Deletion
+    description: |-
+      Detects deletion of the RunMRU registry key, which stores the history of commands executed via the Run dialog.
+      In the clickfix techniques, the phishing lures instruct users to open a run dialog through (Win + R) and execute malicious commands.
+      Adversaries may delete this key to cover their tracks after executing commands. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c11aecef-9c37-45a6-9c07-bc0782f963fd. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_reg_delete_runmru.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1070.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\reg\\.exe$" or xdm.target.process.original_file_name ~= "^reg\\.exe$") and (xdm.target.process.command_line ~= " del" and xdm.target.process.command_line ~= "\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\RunMRU"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: safeboot-registry-key-deleted-via-reg-fc0e89b5
+    name: SafeBoot Registry Key Deleted Via Reg.EXE
+    description: 'Detects execution of "reg.exe" commands with the "delete" flag on safe boot registry keys. Often used by attacker to prevent safeboot execution of security products Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), Tim Shelton, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id fc0e89b5-adb0-43c1-b749-c12a10ec37de. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_reg_delete_safeboot.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "reg\\.exe$" or xdm.target.process.original_file_name ~= "^reg\\.exe$") and (xdm.target.process.command_line ~= " delete " and xdm.target.process.command_line ~= "\\\\SYSTEM\\\\CurrentControlSet\\\\Control\\\\SafeBoot"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: scripting-commandline-process-spawned-ab37a6ec
+    name: Scripting/CommandLine Process Spawned Regsvr32
+    description: 'Detects various command line and scripting engines/processes such as "PowerShell", "Wscript", "Cmd", etc. spawning a "regsvr32" instance. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Legitimate ".bat", ".hta", ".ps1" or ".vbs" scripts leverage legitimately often. Apply additional filter and exclusions as necessary; Some legitimate Windows services. Sigma rule by Florian Roth (Nextron Systems), Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ab37a6ec-6068-432b-a64e-2c7bf95b1d22. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_regsvr32_susp_parent.yml'
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1218.010
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.source.process.executable.path ~= "(?:\\\\cmd\\.exe|\\\\cscript\\.exe|\\\\mshta\\.exe|\\\\powershell_ise\\.exe|\\\\powershell\\.exe|\\\\pwsh\\.exe|\\\\wscript\\.exe)$" and xdm.target.process.executable.path ~= "\\\\regsvr32\\.exe$") and not ((xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\System32\\\\cmd\\.exe$" and xdm.target.process.command_line ~= " /s C:\\\\Windows\\\\System32\\\\RpcProxy\\\\RpcProxy\\.dll$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: sdclt-child-processes-da2738f2
+    name: Sdclt Child Processes
+    description: "A General detection for sdclt spawning new processes. This could be an indicator of sdclt being used for bypass UAC techniques. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id da2738f2-fadb-4394-afa7-0a0674885afa. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_sdclt_child_process.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1548.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and xdm.source.process.executable.path ~= "\\\\sdclt\\.exe$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: sdiagnhost-calling-suspicious-child-pr-f3d39c45
+    name: Sdiagnhost Calling Suspicious Child Process
+    description: "Detects sdiagnhost.exe calling a suspicious child process (e.g. used in exploits for Follina / CVE-2022-30190) Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by Nextron Systems, @Kostastsale, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f3d39c45-de1a-4486-a687-ab126124f744. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_sdiagnhost_susp_child.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1036
+      - T1218
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.source.process.executable.path ~= "\\\\sdiagnhost\\.exe$" and xdm.target.process.executable.path ~= "(?:\\\\powershell\\.exe|\\\\pwsh\\.exe|\\\\cmd\\.exe|\\\\mshta\\.exe|\\\\cscript\\.exe|\\\\wscript\\.exe|\\\\taskkill\\.exe|\\\\regsvr32\\.exe|\\\\rundll32\\.exe|\\\\calc\\.exe)$") and not (((xdm.target.process.executable.path ~= "\\\\cmd\\.exe$" and xdm.target.process.command_line contains "bits") or (xdm.target.process.executable.path ~= "\\\\powershell\\.exe$" and xdm.target.process.command_line ~= "(?:-noprofile -|-noprofile)$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: security-service-disabled-via-reg-exe-5e95028c
+    name: Security Service Disabled Via Reg.EXE
+    description: 'Detects execution of "reg.exe" to disable security services such as Windows Defender. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unlikely. Sigma rule by Florian Roth (Nextron Systems), John Lambert (idea), elhoim, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 5e95028c-5229-4214-afae-d653d573d0ec. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_reg_disable_sec_services.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.command_line ~= "reg" and xdm.target.process.command_line ~= "add") and ((xdm.target.process.command_line ~= "d 4" and xdm.target.process.command_line ~= "v Start") and xdm.target.process.command_line ~= "(?:\\\\AppIDSvc|\\\\MsMpSvc|\\\\NisSrv|\\\\SecurityHealthService|\\\\Sense|\\\\UsoSvc|\\\\WdBoot|\\\\WdFilter|\\\\WdNisDrv|\\\\WdNisSvc|\\\\WinDefend|\\\\wscsvc|\\\\wuauserv)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: self-extracting-package-creation-via-i-b2b048b0
+    name: Self Extracting Package Creation Via Iexpress.EXE From Potentially Suspicious Location
+    description: |-
+      Detects the use of iexpress.exe to create binaries via Self Extraction Directive (SED) files located in potentially suspicious locations.
+      This behavior has been observed in-the-wild by different threat actors. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Administrators building packages using iexpress.exe. Sigma rule by Joseliyo Sanchez, @Joseliyo_Jstnk, Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b2b048b0-7857-4380-b0fb-d3f0ab820b71. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_iexpress_susp_execution.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1218
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\iexpress\\.exe$" or xdm.target.process.original_file_name ~= "^IEXPRESS\\.exe$") and xdm.target.process.command_line ~= " [-/–—―]n " and xdm.target.process.command_line ~= "(?::\\\\ProgramData\\\\|:\\\\Temp\\\\|:\\\\Windows\\\\System32\\\\Tasks\\\\|:\\\\Windows\\\\Tasks\\\\|:\\\\Windows\\\\Temp\\\\|\\\\AppData\\\\Local\\\\Temp\\\\)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: sensitive-file-dump-via-print-exe-2fcda7e2
+    name: Sensitive File Dump Via Print.EXE
+    description: "Detects the abuse of the Print.exe utility for credential harvesting which involves using Print.Exe to copy sensitive files such as ntds.dit, SAM, SECURITY, or SYSTEM from the Windows directory in order to extract credentials, locally or remotely. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Ayush Anand (Securityinbits), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 2fcda7e2-8c57-4904-86ac-37fc3157e09d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_print_dump_sensitive_files.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1003.003
+      - T1003.002
+      - T1218
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\print\\.exe$" or xdm.target.process.original_file_name ~= "^Print\\.EXE$") and (xdm.target.process.command_line ~= "[-/–—―]D" and xdm.target.process.command_line ~= "(?:\\\\config\\\\SAM|\\\\config\\\\SECURITY|\\\\config\\\\SYSTEM|\\\\windows\\\\ntds\\\\ntds\\.dit)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: sensitive-file-dump-via-wbadmin-exe-8b93a509
+    name: Sensitive File Dump Via Wbadmin.EXE
+    description: |-
+      Detects the dump of highly sensitive files such as "NTDS.DIT" and "SECURITY" hive.
+      Attackers can leverage the "wbadmin" utility in order to dump sensitive files that might contain credential or sensitive information. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Legitimate backup operation by authorized administrators. Matches must be investigated and allowed on a case by case basis.. Sigma rule by Nasreddine Bencherchali (Nextron Systems), frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8b93a509-1cb8-42e1-97aa-ee24224cdc15. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_wbadmin_dump_sensitive_files.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1003.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\wbadmin\\.exe$" or xdm.target.process.original_file_name ~= "^WBADMIN\\.EXE$") and xdm.target.process.command_line ~= "(?:start|backup)" and xdm.target.process.command_line ~= "(?:\\\\config\\\\SAM|\\\\config\\\\SECURITY|\\\\config\\\\SYSTEM|\\\\Windows\\\\NTDS\\\\NTDS\\.dit)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: sensitive-file-recovery-from-backup-vi-84972c80
+    name: Sensitive File Recovery From Backup Via Wbadmin.EXE
+    description: |-
+      Detects the dump of highly sensitive files such as "NTDS.DIT" and "SECURITY" hive.
+      Attackers can leverage the "wbadmin" utility in order to dump sensitive files that might contain credential or sensitive information. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 84972c80-251c-4c3a-9079-4f00aad93938. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_wbadmin_restore_sensitive_files.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1003.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\wbadmin\\.exe$" or xdm.target.process.original_file_name ~= "^WBADMIN\\.EXE$") and ((xdm.target.process.command_line ~= " recovery" and xdm.target.process.command_line ~= "recoveryTarget" and xdm.target.process.command_line ~= "itemtype:File") and xdm.target.process.command_line ~= "(?:\\\\config\\\\SAM|\\\\config\\\\SECURITY|\\\\config\\\\SYSTEM|\\\\Windows\\\\NTDS\\\\NTDS\\.dit)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: service-registry-key-deleted-via-reg-e-05b2aa93
+    name: Service Registry Key Deleted Via Reg.EXE
+    description: 'Detects execution of "reg.exe" commands with the "delete" flag on services registry key. Often used by attacker to remove AV software services Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 05b2aa93-1210-42c8-8d9a-2fcc13b284f5. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_reg_delete_services.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "reg\\.exe$" or xdm.target.process.original_file_name ~= "^reg\\.exe$") and xdm.target.process.command_line contains " delete " and xdm.target.process.command_line contains "\\SYSTEM\\CurrentControlSet\\services\\")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: set-suspicious-files-as-system-files-u-efec536f
+    name: Set Suspicious Files as System Files Using Attrib.EXE
+    description: 'Detects the usage of attrib with the "+s" option to set scripts or executables located in suspicious locations as system files to hide them from users and make them unable to be deleted with simple rights. The rule limits the search to specific extensions and directories to avoid FPs Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id efec536f-72e8-4656-8960-5e85d091345b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_attrib_system_susp_paths.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1564.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and (((xdm.target.process.executable.path ~= "\\\\attrib\\.exe$" or xdm.target.process.original_file_name ~= "^ATTRIB\\.EXE$") and xdm.target.process.command_line contains " +s" and xdm.target.process.command_line ~= "(?: %|\\\\Users\\\\Public\\\\|\\\\AppData\\\\Local\\\\|\\\\ProgramData\\\\|\\\\Downloads\\\\|\\\\Windows\\\\Temp\\\\)" and xdm.target.process.command_line ~= "(?:\\.bat|\\.dll|\\.exe|\\.hta|\\.ps1|\\.vbe|\\.vbs)") and not ((xdm.target.process.command_line ~= "\\\\Windows\\\\TEMP\\\\" and xdm.target.process.command_line ~= "\\.exe")))'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: shadow-copies-creation-using-operating-b17ea6f7
+    name: Shadow Copies Creation Using Operating Systems Utilities
+    description: "Shadow Copies creation using operating systems utilities, possible credential access Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Legitimate administrator working with shadow copies, access for backup purposes. Sigma rule by Teymur Kheirkhabarov, Daniil Yugoslavskiy, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b17ea6f7-6e90-447e-a799-e6c0a493d6ce. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_susp_shadow_copies_creation.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1003
+      - T1003.002
+      - T1003.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "(?:\\\\powershell\\.exe|\\\\pwsh\\.exe|\\\\wmic\\.exe|\\\\vssadmin\\.exe)$" or xdm.target.process.original_file_name ~= "^(?:PowerShell\\.EXE|pwsh\\.dll|wmic\\.exe|VSSADMIN\\.EXE)$") and (xdm.target.process.command_line ~= "shadow" and xdm.target.process.command_line ~= "create"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: start-of-nt-virtual-dos-machine-16905e21
+    name: Start of NT Virtual DOS Machine
+    description: "Ntvdm.exe allows the execution of 16-bit Windows applications on 32-bit Windows operating systems, as well as the execution of both 16-bit and 32-bit DOS applications Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Legitimate use. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 16905e21-66ee-42fe-b256-1318ada2d770. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_susp_16bit_application.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and xdm.target.process.executable.path ~= "(?:\\\\ntvdm\\.exe|\\\\csrstub\\.exe)$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspect-svchost-activity-16c37b52
+    name: Suspect Svchost Activity
+    description: "It is extremely abnormal for svchost.exe to spawn without any CLI arguments and is normally observed when a malicious process spawns the process and injects code into the process memory space. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Rpcnet.exe / rpcnetp.exe which is a lojack style software. https://www.blackhat.com/docs/us-14/materials/us-14-Kamlyuk-Kamluk-Computrace-Backdoor-Revisited.pdf. Sigma rule by David Burkett, @signalblur, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 16c37b52-b141-42a5-a3ea-bbe098444397. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_svchost_execution_with_no_cli_flags.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1055
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.command_line ~= "svchost\\.exe$" and xdm.target.process.executable.path ~= "\\\\svchost\\.exe$") and not ((xdm.source.process.executable.path ~= "(?:\\\\rpcnet\\.exe|\\\\rpcnetp\\.exe)$" or not (xdm.target.process.command_line ~= "."))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-addinutil-exe-commandline-e-631b22a4
+    name: Suspicious AddinUtil.EXE CommandLine Execution
+    description: "Detects execution of the Add-In deployment cache updating utility (AddInutil.exe) with suspicious Addinroot or Pipelineroot paths. An adversary may execute AddinUtil.exe with uncommon Addinroot/Pipelineroot paths that point to the adversaries Addins.Store payload. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), Michael McKinley (@McKinleyMike), Tony Latteri (@TheLatteri), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 631b22a4-70f4-4e2f-9ea8-42f84d9df6d8. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_addinutil_suspicious_cmdline.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1218
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\addinutil\\.exe$" or xdm.target.process.original_file_name ~= "^AddInUtil\\.exe$") and ((xdm.target.process.command_line ~= "(?:-AddInRoot:|-PipelineRoot:)" and xdm.target.process.command_line ~= "(?:\\\\AppData\\\\Local\\\\Temp\\\\|\\\\Desktop\\\\|\\\\Downloads\\\\|\\\\Users\\\\Public\\\\|\\\\Windows\\\\Temp\\\\)") or (xdm.target.process.command_line ~= "(?:-AddInRoot:\\.|-AddInRoot:\"\\.\"|-PipelineRoot:\\.|-PipelineRoot:\"\\.\")" and xdm.target.process.current_directory ~= "(?:\\\\AppData\\\\Local\\\\Temp\\\\|\\\\Desktop\\\\|\\\\Downloads\\\\|\\\\Users\\\\Public\\\\|\\\\Windows\\\\Temp\\\\)")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-advpack-call-via-rundll32-e-a1473adb
+    name: Suspicious Advpack Call Via Rundll32.EXE
+    description: 'Detects execution of "rundll32" calling "advpack.dll" with potential obfuscated ordinal calls in order to leverage the "RegisterOCX" function Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Florian Roth (Nextron Systems), Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a1473adb-5338-4a20-b4c3-126763e2d3d3. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_rundll32_advpack_obfuscated_ordinal_call.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\rundll32\\.exe$" or xdm.target.process.original_file_name ~= "^RUNDLL32\\.EXE$" or xdm.target.process.command_line contains "rundll32") and xdm.target.process.command_line contains "advpack" and ((xdm.target.process.command_line ~= "#\\+" and xdm.target.process.command_line ~= "12") or xdm.target.process.command_line contains "#-"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-agentexecutor-powershell-ex-c0b40568
+    name: Suspicious AgentExecutor PowerShell Execution
+    description: 'Detects execution of the AgentExecutor.exe binary. Which can be abused as a LOLBIN to execute powershell scripts with the ExecutionPolicy "Bypass" or any binary named "powershell.exe" located in the path provided by 6th positional argument Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), memory-shards, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c0b40568-b1e9-4b03-8d6c-b096da6da9ab. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_agentexecutor_susp_usage.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1218
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and (((xdm.target.process.executable.path ~= "\\\\AgentExecutor\\.exe$" or xdm.target.process.original_file_name ~= "^AgentExecutor\\.exe$") and xdm.target.process.command_line ~= "(?: -powershell| -remediationScript)") and not ((xdm.target.process.command_line ~= "(?:C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1\\.0\\\\|C:\\\\Windows\\\\SysWOW64\\\\WindowsPowerShell\\\\v1\\.0\\\\)" or xdm.source.process.executable.path ~= "\\\\Microsoft\\.Management\\.Services\\.IntuneWindowsAgent\\.exe$")))'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-bitlocker-access-agent-upda-9f38c1db
+    name: Suspicious BitLocker Access Agent Update Utility Execution
+    description: |-
+      Detects the execution of the BitLocker Access Agent Update Utility (baaupdate.exe) which is not a common parent process for other processes.
+      Suspicious child processes spawned by baaupdate.exe could indicate an attempt at lateral movement via BitLocker DCOM & COM Hijacking. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by andrewdanis, Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9f38c1db-e2ae-40bf-81d0-5b68f73fb512. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_baaupdate_susp_child_process.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1218
+      - T1021.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.source.process.executable.path ~= "\\\\baaupdate\\.exe$" and xdm.target.process.executable.path ~= "(?:\\\\bitsadmin\\.exe|\\\\cmd\\.exe|\\\\cscript\\.exe|\\\\mshta\\.exe|\\\\powershell_ise\\.exe|\\\\powershell\\.exe|\\\\regsvr32\\.exe|\\\\rundll32\\.exe|\\\\schtasks\\.exe|\\\\wmic\\.exe|\\\\wscript\\.exe)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-cabinet-file-execution-via-dc4576d4
+    name: Suspicious Cabinet File Execution Via Msdt.EXE
+    description: 'Detects execution of msdt.exe using the "cab" flag which could indicates suspicious diagcab files with embedded answer files leveraging CVE-2022-30190 Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Legitimate usage of ".diagcab" files. Sigma rule by Nasreddine Bencherchali (Nextron Systems), GossiTheDog, frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id dc4576d4-7467-424f-9eee-fd2b02855fe0. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_msdt_susp_cab_options.yml'
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1202
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\msdt\\.exe$" or xdm.target.process.original_file_name ~= "^msdt\\.exe$") and xdm.target.process.command_line ~= " [-/–—―]cab ")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 2026.1118.0
+    released: 2026-11-18
+    notes: Converted from the SigmaHQ rules at 698f0912f571d5fac3bf8c51f5421139834a011c.

@@ -1,0 +1,284 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: cisco-asa
+name: Cisco ASA firewall
+description: Reads Cisco ASA syslog (denies, connections, VPN and AAA logins, management logins) into the ASIX data model and watches for login guessing, deny floods and management logins.
+version: 1.0.0
+audience: enterprise
+publisher:
+  name: ASIX
+certification: community
+supported_by: community
+tags:
+  - cisco
+  - asa
+  - firewall
+  - vpn
+  - network
+sources:
+  - Cisco ASA syslog at informational level (logging trap informational; message ids 106023, 302013, 302015, 113004, 113005, 605004, 605005)
+parsers:
+  - key: deny
+    name: ASA access-list deny (106023)
+    description: "Packets dropped by an access list: protocol, source, destination and the access group."
+    parsing: |-
+      [INGEST:vendor="cisco", product="asa", no_hit=keep, content_id="cisco_asa_deny"]
+      filter _raw ~= "%ASA-[0-9]-106023: Deny"
+      | alter
+          event_category = "network_connection",
+          asa_id = "106023",
+          protocol = arrayindex(regextract(_raw, "Deny ([a-z0-9]{1,12}) src"), 0),
+          src_zone = arrayindex(regextract(_raw, " src ([A-Za-z0-9_.-]{1,40}):"), 0),
+          src_ip = arrayindex(regextract(_raw, " src [A-Za-z0-9_.-]{1,40}:([0-9.]{7,15})"), 0),
+          src_port = to_integer(arrayindex(regextract(_raw, " src [A-Za-z0-9_.-]{1,40}:[0-9.]{7,15}/([0-9]{1,5}) dst"), 0)),
+          dest_zone = arrayindex(regextract(_raw, " dst ([A-Za-z0-9_.-]{1,40}):"), 0),
+          dest_ip = arrayindex(regextract(_raw, " dst [A-Za-z0-9_.-]{1,40}:([0-9.]{7,15})"), 0),
+          dest_port = to_integer(arrayindex(regextract(_raw, " dst [A-Za-z0-9_.-]{1,40}:[0-9.]{7,15}/([0-9]{1,5}) by"), 0)),
+          acl_name = arrayindex(regextract(_raw, "by access-group \"([^\"]{1,100})\""), 0);
+    model: |-
+      [MODEL: dataset=syslog]
+      filter _content_id = "cisco_asa_deny"
+      | alter
+          xdm.event.type = "network_connection",
+          xdm.event.original_event_type = "ASA-106023",
+          xdm.event.outcome = XDM_CONST.OUTCOME_FAILED,
+          xdm.event.operation = "deny",
+          xdm.event.description = concat("ASA denied ", protocol, " ", src_ip, " to ", dest_ip, ":", to_string(dest_port), " by ", acl_name),
+          xdm.source.ipv4 = src_ip,
+          xdm.source.port = src_port,
+          xdm.target.ipv4 = dest_ip,
+          xdm.target.port = dest_port,
+          xdm.network.ip_protocol = lowercase(protocol);
+    samples:
+      - raw: '<166>Nov 16 2026 10:00:00 asa01 : %ASA-4-106023: Deny tcp src outside:203.0.113.9/51234 dst inside:10.1.1.10/3389 by access-group "OUTSIDE_IN" [0x0, 0x0]'
+        expect:
+          protocol: tcp
+          src_zone: outside
+          src_ip: 203.0.113.9
+          src_port: 51234
+          dest_zone: inside
+          dest_ip: 10.1.1.10
+          dest_port: 3389
+          acl_name: OUTSIDE_IN
+          _content_id: cisco_asa_deny
+        xdm:
+          xdm.source.ipv4: 203.0.113.9
+          xdm.target.port: 3389
+          xdm.event.outcome: FAILED
+          xdm.event.original_event_type: ASA-106023
+        fires:
+          - deny-flood
+  - key: connection
+    name: ASA connection built (302013, 302015)
+    description: New TCP and UDP connections through the firewall, with direction, source and destination.
+    parsing: |-
+      [INGEST:vendor="cisco", product="asa", no_hit=keep, content_id="cisco_asa_connection"]
+      filter _raw ~= "%ASA-[0-9]-30201[35]: Built"
+      | alter
+          event_category = "network_connection",
+          asa_id = arrayindex(regextract(_raw, "%ASA-[0-9]-(30201[35]):"), 0),
+          direction = arrayindex(regextract(_raw, "Built (inbound|outbound)"), 0),
+          protocol = arrayindex(regextract(_raw, "Built [a-z]{3,8} ([A-Za-z]{2,10}) connection"), 0),
+          src_ip = arrayindex(regextract(_raw, " for [A-Za-z0-9_.-]{1,40}:([0-9.]{7,15})/"), 0),
+          src_port = to_integer(arrayindex(regextract(_raw, " for [A-Za-z0-9_.-]{1,40}:[0-9.]{7,15}/([0-9]{1,5}) "), 0)),
+          dest_ip = arrayindex(regextract(_raw, " to [A-Za-z0-9_.-]{1,40}:([0-9.]{7,15})/"), 0),
+          dest_port = to_integer(arrayindex(regextract(_raw, " to [A-Za-z0-9_.-]{1,40}:[0-9.]{7,15}/([0-9]{1,5}) "), 0));
+    model: |-
+      [MODEL: dataset=syslog]
+      filter _content_id = "cisco_asa_connection"
+      | alter
+          xdm.event.type = "network_connection",
+          xdm.event.original_event_type = concat("ASA-", asa_id),
+          xdm.event.outcome = XDM_CONST.OUTCOME_SUCCESS,
+          xdm.event.operation = "built",
+          xdm.network.direction = uppercase(direction),
+          xdm.event.description = concat("ASA built ", lowercase(direction), " ", protocol, " connection ", src_ip, " to ", dest_ip, ":", to_string(dest_port)),
+          xdm.source.ipv4 = src_ip,
+          xdm.source.port = src_port,
+          xdm.target.ipv4 = dest_ip,
+          xdm.target.port = dest_port,
+          xdm.network.ip_protocol = lowercase(protocol);
+    samples:
+      - raw: "<166>Nov 16 2026 10:00:00 asa01 : %ASA-6-302013: Built inbound TCP connection 123456 for outside:203.0.113.9/51234 (203.0.113.9/51234) to inside:10.1.1.10/443 (192.0.2.1/443)"
+        expect:
+          asa_id: "302013"
+          direction: inbound
+          protocol: TCP
+          src_ip: 203.0.113.9
+          src_port: 51234
+          dest_ip: 10.1.1.10
+          dest_port: 443
+        xdm:
+          xdm.network.direction: INBOUND
+          xdm.network.ip_protocol: tcp
+          xdm.target.ipv4: 10.1.1.10
+          xdm.event.original_event_type: ASA-302013
+      - raw: "<166>Nov 16 2026 10:00:00 asa01 : %ASA-6-302015: Built outbound UDP connection 123457 for outside:8.8.8.8/53 (8.8.8.8/53) to inside:10.1.1.5/40000 (192.0.2.1/40000)"
+        expect:
+          asa_id: "302015"
+          direction: outbound
+          protocol: UDP
+          dest_port: 40000
+        xdm:
+          xdm.network.direction: OUTBOUND
+  - key: aaa
+    name: ASA AAA authentication (113004, 113005)
+    description: VPN and AAA logins that succeeded or were rejected, with the user, the reason and the client address.
+    parsing: |-
+      [INGEST:vendor="cisco", product="asa", no_hit=keep, content_id="cisco_asa_aaa"]
+      filter _raw ~= "%ASA-[0-9]-1130(04|05): AAA user authentication"
+      | alter
+          event_category = "authentication",
+          asa_id = arrayindex(regextract(_raw, "%ASA-[0-9]-(11300[45]):"), 0),
+          event_outcome = if(_raw ~= "authentication Rejected", "failure", "success"),
+          user = trim(arrayindex(regextract(_raw, " user = ([^ :]{1,100})"), 0)),
+          reason = trim(arrayindex(regextract(_raw, "reason = ([^:]{1,80})"), 0)),
+          aaa_server = arrayindex(regextract(_raw, "server = *([0-9.]{7,15})"), 0),
+          src_ip = arrayindex(regextract(_raw, "user IP = ([0-9.]{7,15})"), 0);
+    model: |-
+      [MODEL: dataset=syslog]
+      filter _content_id = "cisco_asa_aaa"
+      | alter
+          xdm.event.type = "authentication",
+          xdm.event.original_event_type = concat("ASA-", asa_id),
+          xdm.event.outcome = if(event_outcome = "success", XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.outcome_reason = reason,
+          xdm.event.description = concat("ASA AAA authentication ", event_outcome, " for ", user),
+          xdm.target.user.username = user,
+          xdm.source.ipv4 = src_ip;
+    samples:
+      - raw: "<166>Nov 16 2026 10:00:00 asa01 : %ASA-6-113005: AAA user authentication Rejected : reason = Invalid password : server = 10.1.1.2 : user = jsmith : user IP = 203.0.113.9"
+        expect:
+          asa_id: "113005"
+          event_outcome: failure
+          user: jsmith
+          reason: Invalid password
+          aaa_server: 10.1.1.2
+          src_ip: 203.0.113.9
+        xdm:
+          xdm.event.type: authentication
+          xdm.event.outcome: FAILED
+          xdm.target.user.username: jsmith
+          xdm.source.ipv4: 203.0.113.9
+          xdm.event.outcome_reason: Invalid password
+        fires:
+          - login-guessing
+      - raw: "<166>Nov 16 2026 10:00:00 asa01 : %ASA-6-113004: AAA user authentication Successful : server =  10.1.1.2 : user = jsmith"
+        expect:
+          asa_id: "113004"
+          event_outcome: success
+          user: jsmith
+        xdm:
+          xdm.event.outcome: SUCCESS
+  - key: mgmt-login
+    name: ASA management login (605004, 605005)
+    description: SSH, Telnet and ASDM logins to the firewall itself, permitted or denied.
+    parsing: |-
+      [INGEST:vendor="cisco", product="asa", no_hit=keep, content_id="cisco_asa_mgmt_login"]
+      filter _raw ~= "%ASA-[0-9]-60500[45]: Login (permitted|denied)"
+      | alter
+          event_category = "authentication",
+          asa_id = arrayindex(regextract(_raw, "%ASA-[0-9]-(60500[45]):"), 0),
+          event_outcome = if(_raw ~= "Login permitted", "success", "failure"),
+          src_ip = arrayindex(regextract(_raw, " from ([0-9.]{7,15})/"), 0),
+          service = arrayindex(regextract(_raw, "/([a-z]{2,10}) for user"), 0),
+          user = arrayindex(regextract(_raw, "for user \"([^\"]{1,100})\""), 0);
+    model: |-
+      [MODEL: dataset=syslog]
+      filter _content_id = "cisco_asa_mgmt_login"
+      | alter
+          xdm.event.type = "authentication",
+          xdm.event.original_event_type = concat("ASA-", asa_id),
+          xdm.event.outcome = if(event_outcome = "success", XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.operation = service,
+          xdm.event.description = concat("ASA management login ", event_outcome, " for ", user, " over ", service),
+          xdm.target.user.username = user,
+          xdm.source.ipv4 = src_ip;
+    samples:
+      - raw: '<166>Nov 16 2026 10:00:00 asa01 : %ASA-6-605005: Login permitted from 203.0.113.9/51234 to inside:10.1.1.1/ssh for user "admin"'
+        expect:
+          asa_id: "605005"
+          event_outcome: success
+          src_ip: 203.0.113.9
+          service: ssh
+          user: admin
+        xdm:
+          xdm.event.outcome: SUCCESS
+          xdm.target.user.username: admin
+        fires:
+          - management-login
+      - raw: '<166>Nov 16 2026 10:00:00 asa01 : %ASA-6-605004: Login denied from 203.0.113.9/51234 to inside:10.1.1.1/ssh for user "admin"'
+        expect:
+          asa_id: "605004"
+          event_outcome: failure
+        xdm:
+          xdm.event.outcome: FAILED
+        fires:
+          - login-guessing
+rules:
+  - key: login-guessing
+    name: "ASA: repeated failed VPN or management logins"
+    description: Five or more rejected AAA logins or denied management logins from one address in 10 minutes. Password guessing against the VPN or the firewall.
+    kind: correlation
+    severity: high
+    category: Credential Access
+    mitre:
+      - T1110
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "authentication" and xdm.event.outcome = "FAILED" and xdm.event.original_event_type ~= "^ASA-(1130|6050)"
+      group_by: field:xdm.source.ipv4
+      threshold: 5
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: deny-flood
+    name: "ASA: many denied connections from one address"
+    description: One source had 100 or more connections denied by an access list in 5 minutes. Often a scan.
+    kind: correlation
+    severity: medium
+    category: Discovery
+    mitre:
+      - T1046
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "ASA-106023"
+      group_by: field:xdm.source.ipv4
+      threshold: 100
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: management-login
+    name: "ASA: management login to the firewall"
+    description: "Someone logged in to the firewall itself (SSH, Telnet or ASDM). Informational: check it was an administrator."
+    kind: bioc
+    severity: low
+    category: Initial Access
+    mitre:
+      - T1078
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "ASA-605005"
+      group_by: field:xdm.source.ipv4
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+history:
+  - version: 1.0.0
+    released: 2026-11-16
+    notes: "First release: four parsers (deny, connection, AAA, management login), data model mapping, three detections."

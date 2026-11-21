@@ -1,0 +1,514 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: sigma-windows-dns-query-01
+name: "Sigma: Windows dns query"
+description: "22 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows dns query events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires."
+version: 2026.1118.0
+audience: enterprise
+publisher:
+  name: SigmaHQ community, converted for ASIX
+  url: https://github.com/SigmaHQ/sigma
+certification: community
+supported_by: community
+rules_start_off: true
+tags:
+  - sigma
+  - windows
+  - dns-query
+license: DRL-1.1
+sources:
+  - Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22)
+rules:
+  - key: dns-query-request-to-onelaunch-update-df68f791
+    name: DNS Query Request To OneLaunch Update Service
+    description: |-
+      Detects DNS query requests to "update.onelaunch.com". This domain is associated with the OneLaunch adware application.
+      When the OneLaunch application is installed it will attempt to get updates from this domain. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Unlikely. Sigma rule by Josh Nickels, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id df68f791-ad95-447f-a271-640a0dab9cf8. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_onelaunch_update_service.yml
+    kind: bioc
+    severity: low
+    category: Collection
+    mitre:
+      - T1056
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and (xdm.target.fqdn ~= "^update\\.onelaunch\\.com$" and xdm.source.process.executable.path ~= "\\\\OneLaunch\\.exe$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: notepad-updater-dns-query-to-uncommon-2074e137
+    name: Notepad++ Updater DNS Query to Uncommon Domains
+    description: |-
+      Detects when the Notepad++ updater (gup.exe) makes DNS queries to domains that are not part of the known legitimate update infrastructure.
+      This could indicate potential exploitation of the updater mechanism or suspicious network activity that warrants further investigation. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Some legitimate network misconfigurations or proxy issues causing unexpected DNS queries.; Other legitimate query to official domains not listed in the filter, needing tuning.. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 2074e137-1b73-4e2d-88ba-5a3407dbdce0. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_gup_query_to_uncommon_domains.yml
+    kind: bioc
+    severity: medium
+    category: Collection
+    mitre:
+      - T1195.002
+      - T1557
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and (xdm.source.process.executable.path ~= "\\\\gup\\.exe$" and not (xdm.target.fqdn ~= "^notepad-plus-plus\\.org$") and not ((xdm.target.fqdn ~= "\\.sourceforge\\.net$" or (xdm.target.fqdn ~= "\\.githubusercontent\\.com$" or xdm.target.fqdn ~= "^github\\.com$") or xdm.target.fqdn ~= "\\.googleapis\\.com$" or xdm.target.fqdn ~= "(?:\\.azurewebsites\\.net|block\\.opendns\\.com|gateway\\.zscalerthree\\.net)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-dns-query-indicating-kerber-e7a21b5f
+    name: Suspicious DNS Query Indicating Kerberos Coercion via DNS Object SPN Spoofing
+    description: |-
+      Detects DNS queries containing patterns associated with Kerberos coercion attacks via DNS object spoofing.
+      The pattern "1UWhRCAAAAA..BAAAA" is a base64-encoded signature that corresponds to a marshaled CREDENTIAL_TARGET_INFORMATION structure.
+      Attackers can use this technique to coerce authentication from victim systems to attacker-controlled hosts.
+      It is one of the strong indicators of a Kerberos coercion attack, where adversaries manipulate DNS records
+      to spoof Service Principal Names (SPNs) and redirect authentication requests like CVE-2025-33073. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Unknown. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e7a21b5f-d8c4-4ae5-b8d9-93c5d3f28e1c. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_kerberos_coercion_via_dns_object_spoofing.yml
+    kind: bioc
+    severity: high
+    category: Collection
+    mitre:
+      - T1557.001
+      - T1187
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and (xdm.target.fqdn ~= "UWhRCA" and xdm.target.fqdn ~= "BAAAA")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-server-discovery-via-ldap-query-a21bcd7e
+    name: DNS Server Discovery Via LDAP Query
+    description: "Detects DNS server discovery via LDAP query requests from uncommon applications Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Likely. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a21bcd7e-38ec-49ad-b69a-9ea17e69509e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_dns_server_discovery_via_ldap_query.yml"
+    kind: bioc
+    severity: low
+    category: Discovery
+    mitre:
+      - T1482
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and (xdm.target.fqdn ~= "^_ldap\\." and not ((xdm.source.process.executable.path ~= "(?::\\\\Program Files\\\\|:\\\\Program Files \\(x86\\)\\\\|:\\\\Windows\\\\)" or (xdm.source.process.executable.path contains ":\\ProgramData\\Microsoft\\Windows Defender\\Platform\\" and xdm.source.process.executable.path ~= "\\\\MsMpEng\\.exe$") or xdm.source.process.executable.path ~= "^<unknown process>$" or not (xdm.source.process.executable.path ~= "."))) and not ((xdm.source.process.executable.path ~= "^C:\\\\WindowsAzure\\\\GuestAgent" or xdm.source.process.executable.path ~= "(?:\\\\chrome\\.exe|\\\\firefox\\.exe|\\\\opera\\.exe)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: appx-package-installation-attempts-via-7cff77e1
+    name: AppX Package Installation Attempts Via AppInstaller.EXE
+    description: 'Detects DNS queries made by "AppInstaller.EXE". The AppInstaller is the default handler for the "ms-appinstaller" URI. It attempts to load/install a package from the referenced URL Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7cff77e1-9663-46a3-8260-17f2e1aa9d0a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_appinstaller.yml'
+    kind: bioc
+    severity: medium
+    category: dns_query
+    mitre:
+      - T1105
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and (xdm.source.process.executable.path ~= "^C:\\\\Program Files\\\\WindowsApps\\\\Microsoft\\.DesktopAppInstaller_" and xdm.source.process.executable.path ~= "\\\\AppInstaller\\.exe$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: cloudflared-tunnels-related-dns-reques-a1d9eec5
+    name: Cloudflared Tunnels Related DNS Requests
+    description: |-
+      Detects DNS requests to Cloudflared tunnels domains.
+      Attackers can abuse that feature to establish a reverse shell or persistence on a machine. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Legitimate use of cloudflare tunnels will also trigger this.. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a1d9eec5-33b2-4177-8d24-27fe754d0812. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_cloudflared_communication.yml
+    kind: bioc
+    severity: medium
+    category: dns_query
+    mitre:
+      - T1071.001
+      - T1572
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and xdm.target.fqdn ~= "(?:\\.v2\\.argotunnel\\.com|protocol-v2\\.argotunnel\\.com|trycloudflare\\.com|update\\.argotunnel\\.com)$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-request-by-quickassist-exe-882e858a
+    name: DNS Query Request By QuickAssist.EXE
+    description: 'Detects DNS queries initiated by "QuickAssist.exe" to Microsoft Quick Assist primary endpoint that is used to establish a session. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Legitimate use of Quick Assist in the environment.. Sigma rule by Muhammad Faisal (@faisalusuf), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 882e858a-3233-4ba8-855e-2f3d3575803d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_quickassist.yml'
+    kind: bioc
+    severity: low
+    category: dns_query
+    mitre:
+      - T1071.001
+      - T1210
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and (xdm.source.process.executable.path ~= "\\\\QuickAssist\\.exe$" and xdm.target.fqdn ~= "remoteassistance\\.support\\.services\\.microsoft\\.com$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-to-azurewebsites-net-by-non-e043f529
+    name: DNS Query To AzureWebsites.NET By Non-Browser Process
+    description: 'Detects a DNS query by a non browser process on the system to "azurewebsites.net". The latter was often used by threat actors as a malware hosting and exfiltration site. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Likely with other browser software. Apply additional filters for any other browsers you might use.. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e043f529-8514-4205-8ab0-7f7d2927b400. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_domain_azurewebsites.yml'
+    kind: bioc
+    severity: medium
+    category: dns_query
+    mitre:
+      - T1219.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and (xdm.target.fqdn ~= "azurewebsites\\.net$" and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe|C:\\\\Program Files \\(x86\\)\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Mozilla Firefox\\\\firefox\\.exe|C:\\\\Program Files \\(x86\\)\\\\Mozilla Firefox\\\\firefox\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Internet Explorer\\\\iexplore\\.exe|C:\\\\Program Files\\\\Internet Explorer\\\\iexplore\\.exe)$" or (xdm.source.process.executable.path ~= "^C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeWebView\\\\Application\\\\" or xdm.source.process.executable.path ~= "\\\\WindowsApps\\\\MicrosoftEdge\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe|C:\\\\Program Files\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe)$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeCore\\\\|C:\\\\Program Files\\\\Microsoft\\\\EdgeCore\\\\)" and xdm.source.process.executable.path ~= "(?:\\\\msedge\\.exe|\\\\msedgewebview2\\.exe)$") or xdm.source.process.executable.path ~= "\\\\safari\\.exe$" or xdm.source.process.executable.path ~= "(?:\\\\MsMpEng\\.exe|\\\\MsSense\\.exe)$" or (xdm.source.process.executable.path ~= "\\\\brave\\.exe$" and xdm.source.process.executable.path ~= "^C:\\\\Program Files\\\\BraveSoftware\\\\") or (xdm.source.process.executable.path contains "\\AppData\\Local\\Maxthon\\" and xdm.source.process.executable.path ~= "\\\\maxthon\\.exe$") or (xdm.source.process.executable.path contains "\\AppData\\Local\\Programs\\Opera\\" and xdm.source.process.executable.path ~= "\\\\opera\\.exe$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\SeaMonkey\\\\|C:\\\\Program Files \\(x86\\)\\\\SeaMonkey\\\\)" and xdm.source.process.executable.path ~= "\\\\seamonkey\\.exe$") or (xdm.source.process.executable.path contains "\\AppData\\Local\\Vivaldi\\" and xdm.source.process.executable.path ~= "\\\\vivaldi\\.exe$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Naver\\\\Naver Whale\\\\|C:\\\\Program Files \\(x86\\)\\\\Naver\\\\Naver Whale\\\\)" and xdm.source.process.executable.path ~= "\\\\whale\\.exe$") or xdm.source.process.executable.path contains "\\Tor Browser\\" or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Waterfox\\\\|C:\\\\Program Files \\(x86\\)\\\\Waterfox\\\\)" and xdm.source.process.executable.path ~= "\\\\Waterfox\\.exe$") or (xdm.source.process.executable.path contains "\\AppData\\Local\\Programs\\midori-ng\\" and xdm.source.process.executable.path ~= "\\\\Midori Next Generation\\.exe$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\SlimBrowser\\\\|C:\\\\Program Files \\(x86\\)\\\\SlimBrowser\\\\)" and xdm.source.process.executable.path ~= "\\\\slimbrowser\\.exe$") or (xdm.source.process.executable.path contains "\\AppData\\Local\\Flock\\" and xdm.source.process.executable.path ~= "\\\\Flock\\.exe$") or (xdm.source.process.executable.path contains "\\AppData\\Local\\Phoebe\\" and xdm.source.process.executable.path ~= "\\\\Phoebe\\.exe$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Falkon\\\\|C:\\\\Program Files \\(x86\\)\\\\Falkon\\\\)" and xdm.source.process.executable.path ~= "\\\\falkon\\.exe$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Avant Browser\\\\|C:\\\\Program Files\\\\Avant Browser\\\\)" and xdm.source.process.executable.path ~= "\\\\avant\\.exe$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-to-common-malware-hosting-an-f8c1e80b
+    name: DNS Query To Common Malware Hosting and Shortener Services
+    description: |-
+      Detects DNS queries to domains commonly used by threat actors to host malware payloads or redirect through URL shorteners.
+      These include platforms like Cloudflare Workers, TryCloudflare, InfinityFree, and URL shorteners such as tinyurl and lihi.cc.
+      Such DNS activity can indicate potential delivery or command-and-control communication attempts. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Legitimate use of these services is possible but rare in enterprise environments. Sigma rule by Ahmed Nosir (@egycondor), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f8c1e80b-c73a-476a-ae24-6c72528b1521. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_common_malware_hosting_services.yml
+    kind: bioc
+    severity: medium
+    category: dns_query
+    mitre:
+      - T1071.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and xdm.target.fqdn ~= "(?:msapp\\.workers\\.dev|trycloudflare\\.com|infinityfreeapp\\.com|my5353\\.com|reurl\\.cc|lihi\\.cc|tinyurl\\.com)"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-to-devtunnels-domain-1cb0c6ce
+    name: DNS Query To Devtunnels Domain
+    description: "Detects DNS query requests to Devtunnels domains. Attackers can abuse that feature to establish a reverse shell or persistence on a machine. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Legitimate use of Devtunnels will also trigger this.. Sigma rule by citron_ninja, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 1cb0c6ce-3d00-44fc-ab9c-6d6d577bf20b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_devtunnels_communication.yml"
+    kind: bioc
+    severity: medium
+    category: dns_query
+    mitre:
+      - T1071.001
+      - T1572
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and xdm.target.fqdn ~= "\\.devtunnels\\.ms$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-to-visual-studio-code-tunnel-b3e6418f
+    name: DNS Query To Visual Studio Code Tunnels Domain
+    description: "Detects DNS query requests to Visual Studio Code tunnel domains. Attackers can abuse that feature to establish a reverse shell or persistence on a machine. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Legitimate use of Visual Studio Code tunnel will also trigger this.. Sigma rule by citron_ninja, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b3e6418f-7c7a-4fad-993a-93b65027a9f1. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_vscode_tunnel_communication.yml"
+    kind: bioc
+    severity: medium
+    category: dns_query
+    mitre:
+      - T1071.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and xdm.target.fqdn ~= "\\.tunnels\\.api\\.visualstudio\\.com$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-to-wildcard-dns-services-win-4f8a1c2e
+    name: DNS Query to Wildcard DNS Services - Windows
+    description: |-
+      Detects DNS queries to public wildcard DNS services that dynamically resolve subdomains to IP addresses embedded in the subdomain.
+      Adversaries abuse these services to establish C2 channels or stage phishing infrastructure without registering a custom domain, potentially to evade detection and attribution. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Developers on Windows workstations testing local services or web applications without editing the hosts file. Sigma rule by MahirAli Khan, Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 4f8a1c2e-7d3b-4e5f-9a6c-0b1d2e3f4a5b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_wildcard_dns_service.yml
+    kind: bioc
+    severity: medium
+    category: dns_query
+    mitre:
+      - T1071.004
+      - T1568
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and xdm.target.fqdn ~= "(?:\\.1u\\.ms|\\.backname\\.io|\\.nip\\.io|\\.sslip\\.io|\\.traefik\\.me|\\.xip\\.io)$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-tor-onion-address-sysmon-b55ca2a3
+    name: DNS Query Tor .Onion Address - Sysmon
+    description: 'Detects DNS queries to an ".onion" address related to Tor routing networks Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b55ca2a3-7cff-4dda-8bdd-c7bfa63bf544. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_tor_onion_domain_query.yml'
+    kind: bioc
+    severity: high
+    category: dns_query
+    mitre:
+      - T1090.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and (xdm.target.fqdn ~= "(?:\\.hiddenservice\\.net|\\.onion\\.ca|\\.onion\\.cab|\\.onion\\.casa|\\.onion\\.city|\\.onion\\.direct|\\.onion\\.dog|\\.onion\\.glass|\\.onion\\.gq|\\.onion\\.ink|\\.onion\\.it|\\.onion\\.link|\\.onion\\.lt|\\.onion\\.lu|\\.onion\\.nu|\\.onion\\.pet|\\.onion\\.plus|\\.onion\\.rip|\\.onion\\.sh|\\.onion\\.to|\\.onion\\.top|\\.onion|\\.s1\\.tor-gateways\\.de|\\.s2\\.tor-gateways\\.de|\\.s3\\.tor-gateways\\.de)$" or xdm.target.fqdn ~= "(?:\\.s4\\.tor-gateways\\.de|\\.s5\\.tor-gateways\\.de|\\.t2w\\.pw|\\.tor2web\\.ae\\.org|\\.tor2web\\.blutmagie\\.de|\\.tor2web\\.com|\\.tor2web\\.fi|\\.tor2web\\.io|\\.tor2web\\.org|\\.tor2web\\.xyz|\\.torlink\\.co)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-cobalt-strike-dns-beaconing-f356a9c4
+    name: Suspicious Cobalt Strike DNS Beaconing - Sysmon
+    description: "Detects a program that invoked suspicious DNS queries known from Cobalt Strike beacons Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f356a9c4-effd-4608-bbf8-408afd5cd006. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_mal_cobaltstrike.yml"
+    kind: bioc
+    severity: critical
+    category: dns_query
+    mitre:
+      - T1071.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and (xdm.target.fqdn ~= "^(?:aaa\\.stage\\.|post\\.1)" or xdm.target.fqdn contains ".stage.123456.")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: teamviewer-domain-query-by-non-teamvie-778ba9a8
+    name: TeamViewer Domain Query By Non-TeamViewer Application
+    description: "Detects DNS queries to a TeamViewer domain only resolved by a TeamViewer client by an image that isn't named TeamViewer (sometimes used by threat actors for obfuscation) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Unknown binary names of TeamViewer; Depending on the environment the rule might require some initial tuning before usage to avoid FP with third party applications. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 778ba9a8-45e4-4b80-8e3e-34a419f0b85e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_teamviewer_domain_query_by_uncommon_app.yml"
+    kind: bioc
+    severity: medium
+    category: dns_query
+    mitre:
+      - T1219.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and (xdm.target.fqdn ~= "^(?:taf\\.teamviewer\\.com|udp\\.ping\\.teamviewer\\.com)$" and not (xdm.source.process.executable.path contains "TeamViewer"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-by-finger-utility-c082c2b0
+    name: DNS Query by Finger Utility
+    description: |-
+      Detects DNS queries made by the finger utility, which can be abused by threat actors to retrieve remote commands for execution on Windows devices.
+      In one ClickFix malware campaign, adversaries leveraged the finger protocol to fetch commands from a remote server.
+      Since the finger utility is not commonly used in modern Windows environments, its presence already raises suspicion.
+      Investigating such DNS queries can also help identify potential malicious infrastructure used by threat actors for command and control (C2) communication. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Unlikely. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c082c2b0-525b-4dbc-9a26-a57dc4692074. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_finger.yml
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1071.004
+      - T1059.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and xdm.source.process.executable.path ~= "\\\\finger\\.exe$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-request-by-regsvr32-exe-36e037c4
+    name: DNS Query Request By Regsvr32.EXE
+    description: 'Detects DNS queries initiated by "Regsvr32.exe" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Unknown. Sigma rule by Dmitriy Lifanov, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 36e037c4-c228-4866-b6a3-48eb292b9955. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_regsvr32_dns_query.yml'
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1559.001
+      - T1218.010
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and xdm.source.process.executable.path ~= "\\\\regsvr32\\.exe$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-for-anonfiles-com-domain-sys-065cceea
+    name: DNS Query for Anonfiles.com Domain - Sysmon
+    description: 'Detects DNS queries for "anonfiles.com", which is an anonymous file upload platform often used for malicious purposes Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Rare legitimate access to anonfiles.com. Sigma rule by pH-T (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 065cceea-77ec-4030-9052-fc0affea7110. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_anonymfiles_com.yml'
+    kind: bioc
+    severity: high
+    category: Exfiltration
+    mitre:
+      - T1567.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and xdm.target.fqdn contains ".anonfiles.com"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-to-mega-hosting-website-613c03ba
+    name: DNS Query To MEGA Hosting Website
+    description: "Detects DNS queries for subdomains related to MEGA sharing website Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Legitimate DNS queries and usage of Mega. Sigma rule by Aaron Greetham (@beardofbinary) - NCC Group, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 613c03ba-0779-4a53-8a1f-47f914a4ded3. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_mega_nz.yml"
+    kind: bioc
+    severity: medium
+    category: Exfiltration
+    mitre:
+      - T1567.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and xdm.target.fqdn contains "userstorage.mega.co.nz"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-query-to-ufile-io-1cbbeaaf
+    name: DNS Query To Ufile.io
+    description: 'Detects DNS queries to "ufile.io", which was seen abused by malware and threat actors as a method for data exfiltration Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: DNS queries for "ufile" are not malicious by nature necessarily. Investigate the source to determine the necessary actions to take. Sigma rule by yatinwad, TheDFIRReport, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 1cbbeaaf-3c8c-4e4c-9d72-49485b6a176b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_ufile_io_query.yml'
+    kind: bioc
+    severity: low
+    category: Exfiltration
+    mitre:
+      - T1567.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and xdm.target.fqdn contains "ufile.io"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dns-hybridconnectionmanager-service-bu-7bd3902d
+    name: DNS HybridConnectionManager Service Bus
+    description: "Detects Azure Hybrid Connection Manager services querying the Azure service bus service Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Legitimate use of Azure Hybrid Connection Manager and the Azure Service Bus service. Sigma rule by Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7bd3902d-8b8b-4dd4-838a-c6862d40150d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_hybridconnectionmgr_servicebus.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1554
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and (xdm.target.fqdn contains "servicebus.windows.net" and xdm.source.process.executable.path contains "HybridConnectionManager")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-dns-query-for-ip-lookup-ser-ec82e2a5
+    name: Suspicious DNS Query for IP Lookup Service APIs
+    description: 'Detects DNS queries for IP lookup services such as "api.ipify.org" originating from a non browser process. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 22). Known false positives: Legitimate usage of IP lookup services such as ipify API. Sigma rule by Brandon George (blog post), Thomas Patzke, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ec82e2a5-81ea-4211-a1f8-37a0286df2c2. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/dns_query/dns_query_win_susp_external_ip_lookup.yml'
+    kind: bioc
+    severity: medium
+    category: Reconnaissance
+    mitre:
+      - T1590
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "dns_query" and ((xdm.target.fqdn ~= "^(?:www\\.ip\\.cn|l2\\.io)$" or (xdm.target.fqdn ~= "(?:api\\.2ip\\.ua|api\\.bigdatacloud\\.net|api\\.ipify\\.org|bot\\.whatismyipaddress\\.com|canireachthe\\.net|checkip\\.amazonaws\\.com|checkip\\.dyndns\\.org|curlmyip\\.com|db-ip\\.com|edns\\.ip-api\\.com|eth0\\.me|freegeoip\\.app|geoipy\\.com|getip\\.pro|icanhazip\\.com|ident\\.me|ifconfig\\.io|ifconfig\\.me|ip-api\\.com|ip\\.360\\.cn|ip\\.anysrc\\.net|ip\\.taobao\\.com|ip\\.tyk\\.nu|ipaddressworld\\.com)" or xdm.target.fqdn ~= "(?:ipapi\\.co|ipconfig\\.io|ipecho\\.net|ipinfo\\.io|ipip\\.net|ipof\\.in|ipv4\\.icanhazip\\.com|ipv4bot\\.whatismyipaddress\\.com|ipv6-test\\.com|ipwho\\.is|jsonip\\.com|myexternalip\\.com|seeip\\.org|wgetip\\.com|whatismyip\\.akamai\\.com|whois\\.pconline\\.com\\.cn|wtfismyip\\.com)")) and not ((xdm.source.process.executable.path ~= "\\\\brave\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe|C:\\\\Program Files \\(x86\\)\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Mozilla Firefox\\\\firefox\\.exe|C:\\\\Program Files \\(x86\\)\\\\Mozilla Firefox\\\\firefox\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Internet Explorer\\\\iexplore\\.exe|C:\\\\Program Files\\\\Internet Explorer\\\\iexplore\\.exe)$" or xdm.source.process.executable.path ~= "\\\\maxthon\\.exe$" or (xdm.source.process.executable.path ~= "^C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeWebView\\\\Application\\\\" or xdm.source.process.executable.path ~= "\\\\WindowsApps\\\\MicrosoftEdge\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe|C:\\\\Program Files\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe)$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeCore\\\\|C:\\\\Program Files\\\\Microsoft\\\\EdgeCore\\\\)" and xdm.source.process.executable.path ~= "(?:\\\\msedge\\.exe|\\\\msedgewebview2\\.exe)$") or xdm.source.process.executable.path ~= "\\\\opera\\.exe$" or xdm.source.process.executable.path ~= "\\\\safari\\.exe$" or xdm.source.process.executable.path ~= "\\\\seamonkey\\.exe$" or xdm.source.process.executable.path ~= "\\\\vivaldi\\.exe$" or xdm.source.process.executable.path ~= "\\\\whale\\.exe$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 2026.1118.0
+    released: 2026-11-18
+    notes: Converted from the SigmaHQ rules at 698f0912f571d5fac3bf8c51f5421139834a011c.

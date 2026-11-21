@@ -1,0 +1,244 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: sigma-windows-registry-delete-01
+name: "Sigma: Windows registry delete"
+description: "10 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows registry delete events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires."
+version: 2026.1118.0
+audience: enterprise
+publisher:
+  name: SigmaHQ community, converted for ASIX
+  url: https://github.com/SigmaHQ/sigma
+certification: community
+supported_by: community
+rules_start_off: true
+tags:
+  - sigma
+  - windows
+  - registry-delete
+license: DRL-1.1
+sources:
+  - Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 12 and 13)
+rules:
+  - key: windows-recall-feature-enabled-disable-5dfc1465
+    name: Windows Recall Feature Enabled - DisableAIDataAnalysis Value Deleted
+    description: |-
+      Detects the enabling of the Windows Recall feature via registry manipulation. Windows Recall can be enabled by deleting the existing "DisableAIDataAnalysis" registry value.
+      Adversaries may enable Windows Recall as part of post-exploitation discovery and collection activities.
+      This rule assumes that Recall is already explicitly disabled on the host, and subsequently enabled by the adversary. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 12 and 13). Known false positives: Legitimate use/activation of Windows Recall. Sigma rule by Sajid Nawaz Khan, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 5dfc1465-8f65-4fde-8eb5-6194380c6a62. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_delete/registry_delete_enable_windows_recall.yml
+    kind: bioc
+    severity: medium
+    category: Collection
+    mitre:
+      - T1113
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation in ("registry_key_deleted", "registry_value_deleted") and (xdm.event.operation = "registry_value_deleted" and xdm.target.registry.path ~= "\\\\Microsoft\\\\Windows\\\\WindowsAI\\\\DisableAIDataAnalysis$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: removal-of-potential-com-hijacking-reg-96f697b0
+    name: Removal of Potential COM Hijacking Registry Keys
+    description: |-
+      Detects any deletion of entries in ".*\shell\open\command" registry keys.
+      These registry keys might have been used for COM hijacking activities by a threat actor or an attacker and the deletion could indicate steps to remove its tracks. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 12 and 13). Known false positives: Legitimate software (un)installations are known to cause false positives. Please add them as a filter when encountered. Sigma rule by Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 96f697b0-b499-4e5d-9908-a67bec11cdb6. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_delete/registry_delete_removal_com_hijacking_registry_key.yml
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation in ("registry_key_deleted", "registry_value_deleted") and (xdm.target.registry.path ~= "\\\\shell\\\\open\\\\command$" and not ((xdm.source.process.executable.path ~= "C:\\\\Windows\\\\explorer\\.exe$" or xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\system32\\\\svchost\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\System32\\\\msiexec\\.exe|C:\\\\Windows\\\\SysWOW64\\\\msiexec\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\|C:\\\\Program Files \\(x86\\)\\\\)" or xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\System32\\\\OpenWith\\.exe$")) and not (((xdm.source.process.executable.path ~= "\\\\Dropbox\\.exe$" and xdm.target.registry.path contains "\\Dropbox.") or (xdm.source.process.executable.path ~= "\\\\AppData\\\\Local\\\\Temp\\\\Wireshark_uninstaller\\.exe$" and xdm.target.registry.path contains "\\wireshark-capture-file\\") or (xdm.source.process.executable.path contains "peazip" and xdm.target.registry.path contains "\\PeaZip.") or (xdm.source.process.executable.path ~= "\\\\Everything\\.exe$" and xdm.target.registry.path contains "\\Everything.") or xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\Installer\\\\MSI" or (xdm.source.process.executable.path ~= "^C:\\\\Program Files \\(x86\\)\\\\Java\\\\" and xdm.source.process.executable.path ~= "\\\\installer\\.exe$" and xdm.target.registry.path contains "\\Classes\\WOW6432Node\\CLSID\\{4299124F-F2C3-41b4-9C73-9236B2AD0E8F}") or xdm.source.process.executable.path contains "\\Microsoft\\EdgeUpdate\\Install" or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Avira\\\\Antivirus\\\\|C:\\\\Program Files\\\\Avira\\\\Antivirus\\\\)$" and xdm.target.registry.path ~= "(?:\\\\CLSID\\\\\\{305CA226-D286-468e-B848-2B2E8E697B74\\}\\\\Shell\\\\Open\\\\Command|\\\\AntiVir\\.Keyfile\\\\shell\\\\open\\\\command)$") or ((xdm.source.process.executable.path ~= "AppData\\\\Local\\\\Temp" and xdm.source.process.executable.path ~= "\\\\setup\\.exe") or (xdm.source.process.executable.path ~= "\\\\Temp\\\\is-" and xdm.source.process.executable.path ~= "\\\\target\\.tmp")) or xdm.source.process.executable.path ~= "\\\\ninite\\.exe$" or (xdm.source.process.executable.path ~= "\\\\reg\\.exe$" and xdm.target.registry.path ~= "\\\\Discord\\\\shell\\\\open\\\\command$") or (xdm.source.process.executable.path ~= "\\\\Spotify\\.exe$" and xdm.target.registry.path ~= "\\\\Spotify\\\\shell\\\\open\\\\command$") or (xdm.source.process.executable.path ~= "C:\\\\eclipse\\\\eclipse\\.exe$" and xdm.target.registry.path contains "_Classes\\eclipse+") or (xdm.source.process.executable.path ~= "\\\\Temp" and xdm.source.process.executable.path ~= "\\\\TeamViewer"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: terminal-server-client-connection-hist-07bdd2f5
+    name: Terminal Server Client Connection History Cleared - Registry
+    description: "Detects the deletion of registry keys containing the MSTSC connection history Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 12 and 13). Known false positives: Unknown. Sigma rule by Christian Burkard (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 07bdd2f5-9c58-4f38-aec8-e101bb79ef8d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_delete/registry_delete_mstsc_history_cleared.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1070
+      - T1112
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation in ("registry_key_deleted", "registry_value_deleted") and ((xdm.event.operation = "registry_value_deleted" and xdm.target.registry.path contains "\\Microsoft\\Terminal Server Client\\Default\\MRU") or (xdm.event.operation = "registry_key_deleted" and xdm.target.registry.path contains "\\Microsoft\\Terminal Server Client\\Servers\\"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: delete-defender-scan-shellex-context-m-72a0369a
+    name: Delete Defender Scan ShellEx Context Menu Registry Key
+    description: "Detects deletion of registry key that adds 'Scan with Defender' option in context menu. Attackers may use this to make it harder for users to scan files that are suspicious. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 12 and 13). Known false positives: Unlikely as this weakens defenses and normally would not be done even if using another AV.. Sigma rule by Matt Anderson (Huntress), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 72a0369a-2576-4aaf-bfc9-6bb24a574ac6. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_delete/registry_delete_defender_context_menu.yml"
+    kind: bioc
+    severity: medium
+    category: registry_delete
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation in ("registry_key_deleted", "registry_value_deleted") and (xdm.target.registry.path contains "shellex\\ContextMenuHandlers\\EPP" and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\ProgramData\\\\Microsoft\\\\Windows Defender\\\\Platform\\\\|C:\\\\Program Files\\\\Windows Defender\\\\|C:\\\\Program Files \\(x86\\)\\\\Windows Defender\\\\)" and xdm.source.process.executable.path ~= "\\\\MsMpEng\\.exe$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: folder-removed-from-exploit-guard-prot-272e55a4
+    name: Folder Removed From Exploit Guard ProtectedFolders List - Registry
+    description: 'Detects the removal of folders from the "ProtectedFolders" list of of exploit guard. This could indicate an attacker trying to launch an encryption process or trying to manipulate data inside of the protected folder Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 12 and 13). Known false positives: Legitimate administrators removing applications (should always be investigated). Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 272e55a4-9e6b-4211-acb6-78f51f0b1b40. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_delete/registry_delete_exploit_guard_protected_folders.yml'
+    kind: bioc
+    severity: high
+    category: registry_delete
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation in ("registry_key_deleted", "registry_value_deleted") and (xdm.event.operation = "registry_value_deleted" and xdm.target.registry.path contains "SOFTWARE\\Microsoft\\Windows Defender\\Windows Defender Exploit Guard\\Controlled Folder Access\\ProtectedFolders")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: removal-of-amsi-provider-registry-keys-41d1058a
+    name: Removal Of AMSI Provider Registry Keys
+    description: "Detects the deletion of AMSI provider registry key entries in HKLM\\Software\\Microsoft\\AMSI. This technique could be used by an attacker in order to disable AMSI inspection. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 12 and 13). Known false positives: Unlikely. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 41d1058a-aea7-4952-9293-29eaaf516465. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_delete/registry_delete_removal_amsi_registry_key.yml"
+    kind: bioc
+    severity: high
+    category: registry_delete
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation in ("registry_key_deleted", "registry_value_deleted") and (xdm.target.registry.path ~= "(?:\\{2781761E-28E0-4109-99FE-B9D127C57AFE\\}|\\{A7C452EF-8E9F-42EB-9F2B-245613CA0DC9\\})$" and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\ProgramData\\\\Microsoft\\\\Windows Defender\\\\Platform\\\\|C:\\\\Program Files\\\\Windows Defender\\\\|C:\\\\Program Files \\(x86\\)\\\\Windows Defender\\\\)" and xdm.source.process.executable.path ~= "\\\\MsMpEng\\.exe$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: removal-of-index-value-to-hide-schedul-526cc8bc
+    name: Removal Of Index Value to Hide Schedule Task - Registry
+    description: 'Detects when the "index" value of a scheduled task is removed or deleted from the registry. Which effectively hides it from any tooling such as "schtasks /query" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 12 and 13). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 526cc8bc-1cdc-48ad-8b26-f19bff969cec. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_delete/registry_delete_schtasks_hide_task_via_index_value_removal.yml'
+    kind: bioc
+    severity: medium
+    category: registry_delete
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation in ("registry_key_deleted", "registry_value_deleted") and (xdm.target.registry.path ~= "\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Schedule\\\\TaskCache\\\\Tree\\\\" and xdm.target.registry.path ~= "Index")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: removal-of-sd-value-to-hide-schedule-t-acd74772
+    name: Removal Of SD Value to Hide Schedule Task - Registry
+    description: "Remove SD (Security Descriptor) value in \\Schedule\\TaskCache\\Tree registry hive to hide schedule task. This technique is used by Tarrask malware Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 12 and 13). Known false positives: Unknown. Sigma rule by Sittikorn S, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id acd74772-5f88-45c7-956b-6a7b36c294d2. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_delete/registry_delete_schtasks_hide_task_via_sd_value_removal.yml"
+    kind: bioc
+    severity: medium
+    category: registry_delete
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation in ("registry_key_deleted", "registry_value_deleted") and (xdm.target.registry.path ~= "\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Schedule\\\\TaskCache\\\\Tree\\\\" and xdm.target.registry.path ~= "SD")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: runmru-registry-key-deletion-registry-3a9b8c1e
+    name: RunMRU Registry Key Deletion - Registry
+    description: |-
+      Detects attempts to delete the RunMRU registry key, which stores the history of commands executed via the run dialog.
+      In the clickfix techniques, the phishing lures instruct users to open a run dialog through (Win + R) and execute malicious commands.
+      Adversaries may delete this key to cover their tracks after executing commands. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 12 and 13). Known false positives: Unknown. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3a9b8c1e-5b2e-4f7a-9d1c-2a7f3b6e1c55. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_delete/registry_delete_runmru.yml
+    kind: bioc
+    severity: high
+    category: registry_delete
+    mitre:
+      - T1070.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation in ("registry_key_deleted", "registry_value_deleted") and xdm.target.registry.path ~= "\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\RunMRU$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: windows-credential-guard-related-regis-d645ef86
+    name: Windows Credential Guard Related Registry Value Deleted - Registry
+    description: |-
+      Detects attempts to disable Windows Credential Guard by deleting registry values. Credential Guard uses virtualization-based security to isolate secrets so that only privileged system software can access them.
+      Adversaries may disable Credential Guard to gain access to sensitive credentials stored in the system, such as NTLM hashes and Kerberos tickets, which can be used for lateral movement and privilege escalation. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (events 12 and 13). Known false positives: Unlikely. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id d645ef86-2396-48a1-a2b6-b629ca3f57ff. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/registry/registry_delete/registry_delete_disable_credential_guard.yml
+    kind: bioc
+    severity: high
+    category: registry_delete
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "registry" and xdm.event.operation in ("registry_key_deleted", "registry_value_deleted") and xdm.target.registry.path ~= "(?:\\\\DeviceGuard\\\\EnableVirtualizationBasedSecurity|\\\\DeviceGuard\\\\LsaCfgFlags|\\\\DeviceGuard\\\\RequirePlatformSecurityFeatures|\\\\Lsa\\\\LsaCfgFlags)$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 2026.1118.0
+    released: 2026-11-18
+    notes: Converted from the SigmaHQ rules at 698f0912f571d5fac3bf8c51f5421139834a011c.

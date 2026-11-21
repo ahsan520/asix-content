@@ -1,0 +1,209 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: home-macos
+name: Home Mac
+description: "Catches commands that weaken macOS protections or give a program permanent access: Gatekeeper, SIP, quarantine, LaunchAgents, Keychain and Remote Login."
+version: 1.0.0
+audience: residential
+publisher:
+  name: ASIX
+certification: certified
+supported_by: asix
+tags:
+  - macos
+  - home
+sources:
+  - macOS syslog forwarding (sudo, shell command logs)
+rules:
+  - key: gatekeeper-disabled
+    name: Gatekeeper turned off
+    description: spctl was used to disable Gatekeeper, which lets unsigned apps run.
+    kind: bioc
+    severity: high
+    category: Defense Evasion
+    mitre:
+      - T1562.001
+    definition:
+      regex: spctl +(--master-disable|--global-disable)
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+  - key: sip-disabled
+    name: System Integrity Protection turned off
+    description: csrutil disable was run (normally from Recovery, so seeing it in logs is unusual).
+    kind: bioc
+    severity: high
+    category: Defense Evasion
+    mitre:
+      - T1562.001
+    definition:
+      regex: csrutil +(authenticated-root +)?disable
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+  - key: quarantine-removed
+    name: Download quarantine flag removed
+    description: xattr was used to strip the quarantine flag that makes macOS check a downloaded app.
+    kind: bioc
+    severity: medium
+    category: Defense Evasion
+    mitre:
+      - T1553.001
+    definition:
+      regex: xattr .*(com\.apple\.quarantine|-cr )
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+  - key: launch-agent-added
+    name: LaunchAgent or LaunchDaemon installed
+    description: A property list was copied into, or loaded from, a LaunchAgents or LaunchDaemons folder. This is how macOS programs start themselves at login.
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1543.001
+    definition:
+      regex: (launchctl +(load|bootstrap)|cp |mv |tee ).*/(launchagents|launchdaemons)/[^ ]+\.plist
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+  - key: admin-prompt-script
+    name: Script asking for administrator rights
+    description: osascript used "with administrator privileges", the standard trick for showing a fake password prompt.
+    kind: bioc
+    severity: medium
+    category: Privilege Escalation
+    mitre:
+      - T1059.002
+      - T1548
+    definition:
+      regex: osascript .*with administrator privileges
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+  - key: user-account-created
+    name: Local user account created
+    description: dscl or sysadminctl was used to create a user account.
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1136.001
+    definition:
+      regex: (dscl +\. +-create +/users/|sysadminctl .*-adduser)
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+  - key: keychain-read
+    name: Keychain read from the command line
+    description: The security tool was used to read a saved password or dump a keychain. Developers do this legitimately, so expect some noise.
+    kind: bioc
+    severity: medium
+    category: Credential Access
+    mitre:
+      - T1555.001
+    definition:
+      regex: security +(find-generic-password|find-internet-password|dump-keychain)
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+  - key: privacy-db-edit
+    name: Privacy permissions database edited
+    description: sqlite3 was pointed at TCC.db, the file that stores which apps may use your camera, microphone and files.
+    kind: bioc
+    severity: high
+    category: Defense Evasion
+    mitre:
+      - T1548
+    definition:
+      regex: sqlite3 .*tcc\.db
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+  - key: remote-login-enabled
+    name: Remote Login (SSH) turned on
+    description: systemsetup was used to enable SSH access to the Mac.
+    kind: bioc
+    severity: medium
+    category: Lateral Movement
+    mitre:
+      - T1021.004
+    definition:
+      regex: systemsetup +-setremotelogin +on
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+history:
+  - version: 1.0.0
+    notes: First release.

@@ -1,0 +1,125 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: home-router
+name: Home router and firewall
+description: "Watches the router: failed admin logins, wifi password guessing, new UPnP port openings and floods of blocked traffic."
+version: 1.0.0
+audience: residential
+publisher:
+  name: ASIX
+certification: certified
+supported_by: asix
+tags:
+  - router
+  - firewall
+  - openwrt
+  - home
+sources:
+  - Router or firewall syslog (OpenWrt-style messages)
+rules:
+  - key: admin-login-failures
+    name: Failed router admin logins
+    description: Repeated failed logins to the router (SSH or web interface) from one address.
+    kind: correlation
+    severity: medium
+    category: Credential Access
+    mitre:
+      - T1110
+    definition:
+      regex: (dropbear|luci|uhttpd|sshd).*(bad password|failed login|login attempt for nonexistent user|authentication failure)
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: source_ip
+      threshold: 3
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: admin-login-success
+    name: Router admin login
+    description: "Someone logged in to the router. Informational: check it was you."
+    kind: bioc
+    severity: low
+    category: Initial Access
+    mitre:
+      - T1078
+    definition:
+      regex: "(dropbear.*password auth succeeded|luci: accepted login)"
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: wifi-password-guessing
+    name: Wifi password guessing
+    description: Several failed wifi handshakes in a short time, which can mean someone is trying passwords against your network.
+    kind: correlation
+    severity: medium
+    category: Credential Access
+    mitre:
+      - T1110
+    definition:
+      regex: hostapd.*(4-way handshake failed|authentication failed|ap-sta-possible-psk-mismatch)
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 5
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: upnp-port-opened
+    name: UPnP port opened
+    description: A device on your network asked the router to open an inbound port. Games and torrent clients do this, but so can malware.
+    kind: bioc
+    severity: medium
+    category: Command and Control
+    mitre: []
+    definition:
+      regex: miniupnpd.*(addportmapping|addanyportmapping)
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: blocked-traffic-flood
+    name: Flood of blocked traffic
+    description: Over 200 blocked or rejected packets logged in 5 minutes. Often a port scan from the internet.
+    kind: correlation
+    severity: low
+    category: Discovery
+    mitre:
+      - T1046
+    definition:
+      regex: (kernel:|filterlog).*(drop|reject|block)
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 200
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 1.0.0
+    notes: First release.

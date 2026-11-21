@@ -1,0 +1,1107 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: sigma-windows-process-creation-15
+name: "Sigma: Windows process creation (15 of 24)"
+description: "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires."
+version: 2026.1118.0
+audience: enterprise
+publisher:
+  name: SigmaHQ community, converted for ASIX
+  url: https://github.com/SigmaHQ/sigma
+certification: community
+supported_by: community
+rules_start_off: true
+tags:
+  - sigma
+  - windows
+  - process-creation
+license: DRL-1.1
+sources:
+  - Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1)
+  - "Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage)"
+rules:
+  - key: hacktool-dumpert-process-dumper-execut-2704ab9e
+    name: HackTool - Dumpert Process Dumper Execution
+    description: "Detects the use of Dumpert process dumper, which dumps the lsass.exe process memory Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Very unlikely. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 2704ab9e-afe2-4854-a3b1-0c0706d03578. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_dumpert.yml"
+    kind: bioc
+    severity: critical
+    category: process_creation
+    mitre:
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.hashes contains "IMPHASH=09D278F9DE118EF09163C6140255C690" or xdm.target.process.command_line ~= "(?:Dumpert\\.dll|Dumpert\\.exe)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-edr-freeze-execution-c598cc0c
+    name: Hacktool - EDR-Freeze Execution
+    description: |-
+      Detects execution of EDR-Freeze, a tool that exploits the MiniDumpWriteDump function and WerFaultSecure.exe to suspend EDR and Antivirus processes on Windows.
+      EDR-Freeze leverages a race-condition attack to put security processes into a dormant state by suspending WerFaultSecure at the moment it freezes the target process.
+      This technique does not require kernel-level exploits or BYOVD, but instead abuses user-mode functionality to temporarily disable monitoring by EDR or Antimalware solutions. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c598cc0c-9e70-4852-b9eb-8921af79f598. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_edr_freeze.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "(?:\\\\EDR-Freeze|\\\\EDRFreeze)" and xdm.target.process.executable.path ~= "\\.exe$") or xdm.target.process.hashes ~= "(?:IMPHASH=1195F7935954A2CD09157390C33F8E8C|IMPHASH=129F58DE3D687FB7F012BF6C3D679997|IMPHASH=2C617A175D0086251642C6619F7CC8BA|IMPHASH=8828F0B906F7844358FB92A899E9520F|IMPHASH=AF76D95157EC554DC1EF178E4E66D447|IMPHASH=E1B04316B61ACA31DD52ABBEC0A37FD5|IMPHASH=8B2D5B54AFCFEC60D54F6B31D80ED4A0|IMPHASH=AB8BB31EDD91D2A05FE7B62A535E9EB7)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-edrsilencer-execution-eb2d07d4
+    name: HackTool - EDRSilencer Execution
+    description: "Detects the execution of EDRSilencer, a tool that leverages Windows Filtering Platform (WFP) to block Endpoint Detection and Response (EDR) agents from reporting security events to the server based on PE metadata information. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by @gott_cyber, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id eb2d07d4-49cb-4523-801a-da002df36602. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_edrsilencer.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\EDRSilencer\\.exe$" or xdm.target.process.original_file_name ~= "^EDRSilencer\\.exe$" or xdm.target.process.description contains "EDRSilencer")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-empire-powershell-uac-bypass-3268b746
+    name: HackTool - Empire PowerShell UAC Bypass
+    description: "Detects some Empire PowerShell UAC bypass methods Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by Ecco, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3268b746-88d8-4cd3-bffc-30077d02c787. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_empire_powershell_uac_bypass.yml"
+    kind: bioc
+    severity: critical
+    category: process_creation
+    mitre:
+      - T1548.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and xdm.target.process.command_line ~= "(?: -NoP -NonI -w Hidden -c \\$x=\\$\\(\\(gp HKCU:Software\\\\Microsoft\\\\Windows Update\\)\\.Update\\)| -NoP -NonI -c \\$x=\\$\\(\\(gp HKCU:Software\\\\Microsoft\\\\Windows Update\\)\\.Update\\);)"'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-f-secure-c3-load-by-rundll32-b18c9d4c
+    name: HackTool - F-Secure C3 Load by Rundll32
+    description: "F-Secure C3 produces DLLs with a default exported StartNodeRelay function. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by Alfie Champion (ajpc500), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b18c9d4c-fac9-4708-bd06-dd5bfacf200f. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_c3_rundll32_pattern.yml"
+    kind: bioc
+    severity: critical
+    category: process_creation
+    mitre:
+      - T1218.011
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.command_line ~= "rundll32\\.exe" and xdm.target.process.command_line ~= "\\.dll" and xdm.target.process.command_line ~= "StartNodeRelay")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-gmer-rootkit-detector-and-rem-9082ff1f
+    name: HackTool - GMER Rootkit Detector and Remover Execution
+    description: "Detects the execution GMER tool based on image and hash fields. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9082ff1f-88ab-4678-a3cc-5bcff99fc74d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_gmer.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\gmer\\.exe$" or xdm.target.process.hashes ~= "(?:MD5=E9DC058440D321AA17D0600B3CA0AB04|SHA1=539C228B6B332F5AA523E5CE358C16647D8BBE57|SHA256=E8A3E804A96C716A3E9B69195DB6FFB0D33E2433AF871E4D4E1EAB3097237173)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-handlekatz-lsass-dumper-execu-ca621ba5
+    name: HackTool - HandleKatz LSASS Dumper Execution
+    description: "Detects the use of HandleKatz, a tool that demonstrates the usage of cloned handles to Lsass in order to create an obfuscated memory dump of the same Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ca621ba5-54ab-4035-9942-d378e6fcde3c. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_handlekatz.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\loader\\.exe$" and xdm.target.process.command_line contains "--pid:") or xdm.target.process.hashes ~= "(?:IMPHASH=38D9E015591BBFD4929E0D0F47FA0055|IMPHASH=0E2216679CA6E1094D63322E3412D650)" or ((xdm.target.process.command_line ~= "--pid:" and xdm.target.process.command_line ~= "--outfile:") and xdm.target.process.command_line ~= "(?:\\.dmp|lsass|\\.obf|dump)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-hashcat-password-cracker-exec-39b31e81
+    name: HackTool - Hashcat Password Cracker Execution
+    description: "Execute Hashcat.exe with provided SAM file from registry of Windows and Password list to crack against Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Tools that use similar command line flags and values. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 39b31e81-5f5f-4898-9c0e-2160cfc0f9bf. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_hashcat.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1110.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\hashcat\\.exe$" or (xdm.target.process.command_line ~= "-a " and xdm.target.process.command_line ~= "-m 1000 " and xdm.target.process.command_line ~= "-r "))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-hollowreaper-execution-85d23b42
+    name: HackTool - HollowReaper Execution
+    description: |-
+      Detects usage of HollowReaper, a process hollowing shellcode launcher used for stealth payload execution through process hollowing.
+      It replaces the memory of a legitimate process with custom shellcode, allowing the attacker to execute payloads under the guise of trusted binaries. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 85d23b42-9a9d-4f8f-b3d7-d2733c1d58f5. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_hollowreaper.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1055.012
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and xdm.target.process.executable.path ~= "\\\\HollowReaper\\.exe$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-htran-natbypass-execution-f5e3b62f
+    name: HackTool - Htran/NATBypass Execution
+    description: "Detects executable names or flags used by Htran or Htran-like tools (e.g. NATBypass) Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f5e3b62f-e577-4e59-931e-0a15b2b94e1e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_htran_or_natbypass.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1090
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "(?:\\\\htran\\.exe|\\\\lcx\\.exe)$" or xdm.target.process.command_line ~= "(?:\\.exe -tran |\\.exe -slave )")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-hydra-password-bruteforce-exe-aaafa146
+    name: HackTool - Hydra Password Bruteforce Execution
+    description: "Detects command line parameters used by Hydra password guessing hack tool Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Software that uses the caret encased keywords PASS and USER in its command line. Sigma rule by Vasiliy Burov, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id aaafa146-074c-11eb-adc1-0242ac120002. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_hydra.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1110
+      - T1110.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.command_line ~= "-u " and xdm.target.process.command_line ~= "-p ") and xdm.target.process.command_line ~= "(?:\\^USER\\^|\\^PASS\\^)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-impersonate-execution-cf0c254b
+    name: HackTool - Impersonate Execution
+    description: "Detects execution of the Impersonate tool. Which can be used to manipulate tokens on a Windows computers remotely (PsExec/WmiExec) or interactively Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Sai Prashanth Pulisetti @pulisettis, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id cf0c254b-22f1-4b2b-8221-e137b3c0af94. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_impersonate.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1134.001
+      - T1134.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and ((xdm.target.process.command_line contains "impersonate.exe" and xdm.target.process.command_line ~= "(?: list | exec | adduser )") or xdm.target.process.hashes ~= "(?:MD5=9520714AB576B0ED01D1513691377D01|SHA256=E81CC96E2118DC4FBFE5BAD1604E0AC7681960143E2101E1A024D52264BB0A8A|IMPHASH=0A358FFC1697B7A07D0E817AC740DF62)")'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-inveigh-execution-b99a1518
+    name: HackTool - Inveigh Execution
+    description: "Detects the use of Inveigh a cross-platform .NET IPv4/IPv6 machine-in-the-middle tool Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Very unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b99a1518-1ad5-4f65-bc95-1ffff97a8fd0. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_inveigh.yml"
+    kind: bioc
+    severity: critical
+    category: process_creation
+    mitre:
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\Inveigh\\.exe$" or xdm.target.process.original_file_name ~= "^(?:Inveigh\\.exe|Inveigh\\.dll)$" or xdm.target.process.description ~= "^Inveigh$" or xdm.target.process.command_line ~= "(?: -SpooferIP| -ReplyToIPs | -ReplyToDomains | -ReplyToMACs | -SnifferIP)")'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-krbrelay-execution-e96253b8
+    name: HackTool - KrbRelay Execution
+    description: "Detects the use of KrbRelay, a Kerberos relaying tool Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e96253b8-6b3b-4f90-9e59-3b24b99cf9b4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_krbrelay.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1558.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\KrbRelay\\.exe$" or xdm.target.process.original_file_name ~= "^KrbRelay\\.exe$") or (xdm.target.process.command_line ~= " -spn " and xdm.target.process.command_line ~= " -clsid " and xdm.target.process.command_line ~= " -rbcd ") or (xdm.target.process.command_line ~= "shadowcred" and xdm.target.process.command_line ~= "clsid" and xdm.target.process.command_line ~= "spn") or (xdm.target.process.command_line ~= "spn " and xdm.target.process.command_line ~= "session " and xdm.target.process.command_line ~= "clsid "))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-krbrelayup-execution-12827a56
+    name: HackTool - KrbRelayUp Execution
+    description: "Detects KrbRelayUp used to perform a universal no-fix local privilege escalation in Windows domain environments where LDAP signing is not enforced Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 12827a56-61a4-476a-a9cb-f3068f191073. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_krbrelayup.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1558.003
+      - T1550.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\KrbRelayUp\\.exe$" or xdm.target.process.original_file_name ~= "^KrbRelayUp\\.exe$") or (xdm.target.process.command_line ~= " relay " and xdm.target.process.command_line ~= " -Domain " and xdm.target.process.command_line ~= " -ComputerName ") or (xdm.target.process.command_line ~= " krbscm " and xdm.target.process.command_line ~= " -sc ") or (xdm.target.process.command_line ~= " spawn " and xdm.target.process.command_line ~= " -d " and xdm.target.process.command_line ~= " -cn " and xdm.target.process.command_line ~= " -cp "))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-lazagne-execution-c2b86e67
+    name: HackTool - LaZagne Execution
+    description: |-
+      Detects the execution of the LaZagne. A utility used to retrieve multiple types of passwords stored on a local computer.
+      LaZagne has been leveraged multiple times by threat actors in order to dump credentials. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Some false positive is expected from tools with similar command line flags.. Sigma rule by Nasreddine Bencherchali, Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c2b86e67-b880-4eec-b045-50bc98ef4844. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_lazagne.yml
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\lazagne\\.exe$" or (xdm.target.process.executable.path ~= "(?::\\\\PerfLogs\\\\|:\\\\ProgramData\\\\|:\\\\Temp\\\\|:\\\\Tmp\\\\|:\\\\Users\\\\Public\\\\|:\\\\Windows\\\\Temp\\\\|\\\\\\$Recycle\\.bin|\\\\AppData\\\\|\\\\Desktop\\\\|\\\\Downloads\\\\|\\\\Favorites\\\\|\\\\Links\\\\|\\\\Music\\\\|\\\\Photos\\\\|\\\\Pictures\\\\|\\\\Saved Games\\\\|\\\\Searches\\\\|\\\\Users\\\\Contacts\\\\|\\\\Users\\\\Default\\\\|\\\\Users\\\\Searches\\\\|\\\\Videos\\\\|\\\\Windows\\\\addins\\\\|\\\\Windows\\\\Fonts\\\\|\\\\Windows\\\\IME\\\\)" and xdm.target.process.command_line ~= "(?:\\.exe all|\\.exe browsers|\\.exe chats|\\.exe databases|\\.exe games|\\.exe git|\\.exe mails|\\.exe maven|\\.exe memory|\\.exe multimedia|\\.exe sysadmin|\\.exe unused|\\.exe wifi|\\.exe windows)$")) or (xdm.target.process.command_line ~= "(?: all | browsers | chats | databases | games | mails | maven | memory | multimedia | php | svn | sysadmin | unused | wifi )" and (xdm.target.process.command_line ~= "(?:-1Password|-apachedirectorystudio|-autologon|-ChromiumBased|-coreftp|-credfiles|-credman|-cyberduck|-dbvis|-EyeCon|-filezilla|-filezillaserver|-ftpnavigator|-galconfusion|-gitforwindows|-hashdump|-iisapppool|-IISCentralCertP|-kalypsomedia|-keepass|-keepassconfig|-lsa_secrets|-mavenrepositories|-memory_dump|-Mozilla|-mRemoteNG|-mscache|-opensshforwindows|-openvpn|-outlook)" or xdm.target.process.command_line ~= "(?:-pidgin|-postgresql|-psi-im|-puttycm|-pypykatz|-Rclone|-rdpmanager|-robomongo|-roguestale|-skype|-SQLDeveloper|-squirrel|-tortoise|-turba|-UCBrowser|-unattended|-vault|-vaultfiles|-vnc|-winscp)")))'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-localpotato-execution-6bd75993
+    name: HackTool - LocalPotato Execution
+    description: "Detects the execution of the LocalPotato POC based on basic PE metadata information and default CLI examples Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 6bd75993-9888-4f91-9404-e1e4e4e34b77. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_localpotato.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\LocalPotato\\.exe$" or (xdm.target.process.command_line ~= "\\.exe -i C:\\\\" and xdm.target.process.command_line ~= "-o Windows\\\\") or xdm.target.process.hashes ~= "(?:IMPHASH=E1742EE971D6549E8D4D81115F88F1FC|IMPHASH=DD82066EFBA94D7556EF582F247C8BB5)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-mimikatz-execution-a642964e
+    name: HackTool - Mimikatz Execution
+    description: "Detection well-known mimikatz command line arguments Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unlikely. Sigma rule by Teymur Kheirkhabarov, oscd.community, David ANDRE (additional keywords), Tim Shelton, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a642964e-bead-4bed-8910-1bb4d63e3b4d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_mimikatz_command_line.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1003.001
+      - T1003.002
+      - T1003.004
+      - T1003.005
+      - T1003.006
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.command_line ~= "(?:DumpCreds|mimikatz)" or xdm.target.process.command_line ~= "(?:::aadcookie|::detours|::memssp|::mflt|::ncroutemon|::ngcsign|::printnightmare|::skeleton|::preshutdown|::mstsc|::multirdp)" or xdm.target.process.command_line ~= "(?:rpc::|token::|crypto::|dpapi::|sekurlsa::|kerberos::|lsadump::|privilege::|process::|vault::)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-powertool-execution-a34f79a3
+    name: HackTool - PowerTool Execution
+    description: "Detects the execution of the tool PowerTool which has the ability to kill a process, delete its process file, unload drivers, and delete the driver files Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a34f79a3-8e5f-4cc3-b765-de00695452c2. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_powertool.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "(?:\\\\PowerTool\\.exe|\\\\PowerTool64\\.exe)$" or xdm.target.process.original_file_name ~= "^PowerTool\\.exe$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-ppid-spoofing-selectmyparent-52ff7941
+    name: HackTool - PPID Spoofing SelectMyParent Tool Execution
+    description: "Detects the use of parent process ID spoofing tools like Didier Stevens tool SelectMyParent Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 52ff7941-8211-46f9-84f8-9903efb7077d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_selectmyparent.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1134.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\SelectMyParent\\.exe$" or xdm.target.process.command_line ~= "(?:PPID-spoof|ppid_spoof|spoof-ppid|spoof_ppid|ppidspoof|spoofppid|spoofedppid| -spawnto )" or xdm.target.process.original_file_name ~= "(?:PPID-spoof|ppid_spoof|spoof-ppid|spoof_ppid|ppidspoof|spoofppid|spoofedppid)" or xdm.target.process.description ~= "^SelectMyParent$" or xdm.target.process.hashes ~= "(?:IMPHASH=04D974875BD225F00902B4CAD9AF3FBC|IMPHASH=A782AF154C9E743DDF3F3EB2B8F3D16E|IMPHASH=89059503D7FBF470E68F7E63313DA3AD|IMPHASH=CA28337632625C8281AB8A130B3D6BAD)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-purplesharp-execution-ff23ffbc
+    name: HackTool - PurpleSharp Execution
+    description: "Detects the execution of the PurpleSharp adversary simulation tool Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ff23ffbc-3378-435e-992f-0624dcf93ab4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_purplesharp_indicators.yml"
+    kind: bioc
+    severity: critical
+    category: process_creation
+    mitre:
+      - T1587
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path contains "\\purplesharp" or xdm.target.process.original_file_name ~= "^PurpleSharp\\.exe$") or xdm.target.process.command_line ~= "(?:xyz123456\\.exe|PurpleSharp)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-pypykatz-credentials-dumping-a29808fd
+    name: HackTool - Pypykatz Credentials Dumping Activity
+    description: 'Detects the usage of "pypykatz" to obtain stored credentials. Adversaries may attempt to extract credential material from the Security Account Manager (SAM) database through Windows registry where the SAM database is stored Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a29808fd-ef50-49ff-9c7a-59a9b040b404. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_pypykatz.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1003.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "(?:\\\\pypykatz\\.exe|\\\\python\\.exe)$" and (xdm.target.process.command_line ~= "live" and xdm.target.process.command_line ~= "registry"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-quarks-pwdump-execution-0685b176
+    name: HackTool - Quarks PwDump Execution
+    description: "Detects usage of the Quarks PwDump tool via commandline arguments Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0685b176-c816-4837-8e7b-1216f346636b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_quarks_pwdump.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1003.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\QuarksPwDump\\.exe$" or xdm.target.process.command_line ~= "(?: -dhl| --dump-hash-local| -dhdc| --dump-hash-domain-cached| --dump-bitlocker| -dhd | --dump-hash-domain |--ntds-file)")'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-remotekrbrelay-execution-a7664b14
+    name: HackTool - RemoteKrbRelay Execution
+    description: "Detects the use of RemoteKrbRelay, a Kerberos relaying tool via CommandLine flags and PE metadata. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a7664b14-75fb-4a50-a223-cb9bc0afbacf. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_krbrelay_remote.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1558.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\RemoteKrbRelay\\.exe$" or xdm.target.process.original_file_name ~= "^RemoteKrbRelay\\.exe$") or (xdm.target.process.command_line ~= " -clsid " and xdm.target.process.command_line ~= " -target " and xdm.target.process.command_line ~= " -victim ") or (xdm.target.process.command_line contains "-rbcd " and xdm.target.process.command_line ~= "(?:-cn |--computername )") or (xdm.target.process.command_line contains "-chp " and (xdm.target.process.command_line ~= "-chpPass " and xdm.target.process.command_line ~= "-chpUser ")) or (xdm.target.process.command_line ~= "-addgroupmember " and xdm.target.process.command_line ~= "-group " and xdm.target.process.command_line ~= "-groupuser ") or ((xdm.target.process.command_line ~= "-smb " and xdm.target.process.command_line ~= "--smbkeyword ") and xdm.target.process.command_line ~= "(?:interactive|secrets|service-add)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-rubeus-execution-7ec2c172
+    name: HackTool - Rubeus Execution
+    description: "Detects the execution of the hacktool Rubeus via PE information of command line parameters Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7ec2c172-dceb-4c10-92c9-87c1881b7e18. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_rubeus.yml"
+    kind: bioc
+    severity: critical
+    category: process_creation
+    mitre:
+      - T1003
+      - T1558.003
+      - T1550.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\Rubeus\\.exe$" or xdm.target.process.original_file_name ~= "^Rubeus\\.exe$" or xdm.target.process.description ~= "^Rubeus$" or xdm.target.process.command_line ~= "(?:asreproast |dump /service:krbtgt |dump /luid:0x|kerberoast |createnetonly /program:|ptt /ticket:|/impersonateuser:|renew /ticket:|asktgt /user:|harvest /interval:|s4u /user:|s4u /ticket:|hash /password:|golden /aes256:|silver /user:)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-safetykatz-execution-b1876533
+    name: HackTool - SafetyKatz Execution
+    description: "Detects the execution of the hacktool SafetyKatz via PE information and default Image name Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b1876533-4ed5-4a83-90f3-b8645840a413. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_safetykatz.yml"
+    kind: bioc
+    severity: critical
+    category: process_creation
+    mitre:
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\SafetyKatz\\.exe$" or xdm.target.process.original_file_name ~= "^SafetyKatz\\.exe$" or xdm.target.process.description ~= "^SafetyKatz$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-securityxploded-execution-7679d464
+    name: HackTool - SecurityXploded Execution
+    description: "Detects the execution of SecurityXploded Tools Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7679d464-4f74-45e2-9e01-ac66c5eb041a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_secutyxploded.yml"
+    kind: bioc
+    severity: critical
+    category: process_creation
+    mitre:
+      - T1555
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.company ~= "^SecurityXploded$" or xdm.target.process.executable.path ~= "PasswordDump\\.exe$" or xdm.target.process.original_file_name ~= "PasswordDump\\.exe$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-sharpchisel-execution-cf93e05e
+    name: HackTool - SharpChisel Execution
+    description: "Detects usage of the Sharp Chisel via the commandline arguments Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id cf93e05e-d798-4d9e-b522-b0248dc61eaf. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_sharp_chisel.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1090.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\SharpChisel\\.exe$" or xdm.target.process.product ~= "^SharpChisel$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-sharpdpapi-execution-c7d33b50
+    name: HackTool - SharpDPAPI Execution
+    description: |-
+      Detects the execution of the SharpDPAPI tool based on CommandLine flags and PE metadata.
+      SharpDPAPI is a C# port of some DPAPI functionality from the Mimikatz project. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c7d33b50-f690-4b51-8cfb-0fb912a31e57. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_sharp_dpapi_execution.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1134.001
+      - T1134.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\SharpDPAPI\\.exe$" or xdm.target.process.original_file_name ~= "^SharpDPAPI\\.exe$") or (xdm.target.process.command_line ~= "(?: backupkey | blob | certificates | credentials | keepass | masterkeys | rdg | vaults )" and ((xdm.target.process.command_line ~= " \\{" and xdm.target.process.command_line ~= "\\}:") or xdm.target.process.command_line ~= "(?: /file:| /machine| /mkfile:| /password:| /pvk:| /server:| /target:| /unprotect)")))'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-sharpevtmute-execution-bedfc8ad
+    name: HackTool - SharpEvtMute Execution
+    description: "Detects the use of SharpEvtHook, a tool that tampers with the Windows event logs Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id bedfc8ad-d1c7-4e37-a20e-e2b0dbee759c. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_sharpevtmute.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1685.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\SharpEvtMute\\.exe$" or xdm.target.process.description ~= "^SharpEvtMute$" or xdm.target.process.command_line ~= "(?:--Filter \"rule |--Encoded --Filter \\\\\")")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-sharpimpersonation-execution-f89b08d0
+    name: HackTool - SharpImpersonation Execution
+    description: "Detects execution of the SharpImpersonation tool. Which can be used to manipulate tokens on a Windows computers remotely (PsExec/WmiExec) or interactively Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Sai Prashanth Pulisetti @pulisettis, Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f89b08d0-77ad-4728-817b-9b16c5a69c7a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_sharp_impersonation.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1134.001
+      - T1134.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\SharpImpersonation\\.exe$" or xdm.target.process.original_file_name ~= "^SharpImpersonation\\.exe$") or ((xdm.target.process.command_line ~= " user:" and xdm.target.process.command_line ~= " binary:") or (xdm.target.process.command_line ~= " user:" and xdm.target.process.command_line ~= " shellcode:") or xdm.target.process.command_line ~= "(?: technique:CreateProcessAsUserW| technique:ImpersonateLoggedOnuser)"))'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-sharpmove-tool-execution-055fb54c
+    name: HackTool - SharpMove Tool Execution
+    description: 'Detects the execution of SharpMove, a .NET utility performing multiple tasks such as "Task Creation", "SCM" query, VBScript execution using WMI via its PE metadata and command line options. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Luca Di Bartolomeo (CrimpSec), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 055fb54c-a8f4-4aee-bd44-f74cf30a0d9d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_sharpmove.yml'
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1021.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\SharpMove\\.exe$" or xdm.target.process.original_file_name ~= "^SharpMove\\.exe$") or (xdm.target.process.command_line contains "computername=" and xdm.target.process.command_line ~= "(?:action=create|action=dcom|action=executevbs|action=hijackdcom|action=modschtask|action=modsvc|action=query|action=scm|action=startservice|action=taskscheduler)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-silenttrinity-stager-executio-03552375
+    name: HackTool - SILENTTRINITY Stager Execution
+    description: "Detects SILENTTRINITY stager use via PE metadata Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Aleksey Potapov, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 03552375-cc2c-4883-bbe4-7958d5a980be. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_silenttrinity_stager.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1071
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and xdm.target.process.description contains "st2stager"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-sysmoneop-execution-8a7e90c5
+    name: HackTool - SysmonEOP Execution
+    description: "Detects the execution of the PoC that can be used to exploit Sysmon CVE-2022-41120 Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8a7e90c5-fe6e-45dc-889e-057fe4378bd9. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_sysmoneop.yml"
+    kind: bioc
+    severity: critical
+    category: process_creation
+    mitre:
+      - T1068
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\SysmonEOP\\.exe$" or xdm.target.process.hashes ~= "(?:IMPHASH=22F4089EB8ABA31E1BB162C6D9BF72E5|IMPHASH=5123FA4C4384D431CD0D893EEB49BBEC)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-uacme-akagi-execution-d38d2fa4
+    name: HackTool - UACMe Akagi Execution
+    description: "Detects the execution of UACMe, a tool used for UAC bypasses, via default PE metadata Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Christian Burkard (Nextron Systems), Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id d38d2fa4-98e6-4a24-aff1-410b0c9ad177. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_uacme.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1548.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.product ~= "^UACMe$" or xdm.target.process.company ~= "^(?:REvol Corp|APT 92|UG North|Hazardous Environments|CD Project Rekt)$" or xdm.target.process.description ~= "^(?:UACMe main module|Pentesting utility)$" or xdm.target.process.original_file_name ~= "^(?:Akagi\\.exe|Akagi64\\.exe)$") or xdm.target.process.executable.path ~= "(?:\\\\Akagi64\\.exe|\\\\Akagi\\.exe)$" or (xdm.target.process.hashes ~= "(?:IMPHASH=767637C23BB42CD5D7397CF58B0BE688|IMPHASH=14C4E4C72BA075E9069EE67F39188AD8|IMPHASH=3C782813D4AFCE07BBFC5A9772ACDBDC|IMPHASH=7D010C6BB6A3726F327F7E239166D127|IMPHASH=89159BA4DD04E4CE5559F132A9964EB3|IMPHASH=6F33F4A5FC42B8CEC7314947BD13F30F|IMPHASH=5834ED4291BDEB928270428EBBAF7604|IMPHASH=5A8A8A43F25485E7EE1B201EDCBC7A38|IMPHASH=DC7D30B90B2D8ABF664FBED2B1B59894)" or xdm.target.process.hashes ~= "(?:IMPHASH=41923EA1F824FE63EA5BEB84DB7A3E74|IMPHASH=3DE09703C8E79ED2CA3F01074719906B)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-windows-credential-editor-wce-7aa7009a
+    name: HackTool - Windows Credential Editor (WCE) Execution
+    description: |-
+      Detects the use of Windows Credential Editor (WCE), a popular post-exploitation tool used to extract plaintext passwords, hash, PIN code and Kerberos tickets from memory.
+      It is often used by threat actors for credential dumping and lateral movement within compromised networks. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7aa7009a-28b9-4344-8c1f-159489a390df. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_wce.yml
+    kind: bioc
+    severity: critical
+    category: process_creation
+    mitre:
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "(?:\\\\WCE\\.exe|\\\\WCE64\\.exe)$" or xdm.target.process.hashes ~= "(?:IMPHASH=136F0A8572C058A96436C82E541E4C41|IMPHASH=589657C64DDE88533186C39F82FA1F50|IMPHASH=6BFE09EFCB4FFDE061EBDBAFC4DB84CF|IMPHASH=7D490037BF450877E6D0287BDCFF8D2E|IMPHASH=8AB93B061287C79F3088C5BC7E7D97ED|IMPHASH=A53A02B997935FD8EEDCB5F7ABAB9B9F|IMPHASH=BA434A7A729EEC20E136CA4C32D6C740|IMPHASH=BD1D1547DA13C0FCB6C15E86217D5EB8|IMPHASH=E96A73C7BF33A464C510EDE582318BF2)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-winrm-access-via-evil-winrm-a197e378
+    name: HackTool - WinRM Access Via Evil-WinRM
+    description: "Adversaries may use Valid Accounts to log into a computer using the Remote Desktop Protocol (RDP). The adversary may then perform actions as the logged-on user. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a197e378-d31b-41c0-9635-cfdf1c1bb423. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_evil_winrm.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1021.006
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\ruby\\.exe$" and (xdm.target.process.command_line ~= "-i " and xdm.target.process.command_line ~= "-u " and xdm.target.process.command_line ~= "-p "))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-wmiexec-default-powershell-co-022eaba8
+    name: HackTool - Wmiexec Default Powershell Command
+    description: "Detects the execution of PowerShell with a specific flag sequence that is used by the Wmiexec script Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 022eaba8-f0bf-4dd9-9217-4604b0bb3bb0. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_wmiexec_default_powershell.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and xdm.target.process.command_line contains "-NoP -NoL -sta -NonI -W Hidden -Exec Bypass -Enc"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-xordump-execution-66e563f9
+    name: HackTool - XORDump Execution
+    description: "Detects suspicious use of XORDump process memory dumping utility Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Another tool that uses the command line switches of XORdump. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 66e563f9-1cbd-4a22-a957-d8b7c0f44372. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_xordump.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1036
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: 'xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\xordump\\.exe$" or xdm.target.process.command_line ~= "(?: -process lsass\\.exe | -m comsvcs | -m dbghelp | -m dbgcore )")'
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-execution-pe-metadata-37c1333a
+    name: Hacktool Execution - PE Metadata
+    description: "Detects the execution of different Windows based hacktools via PE metadata (company, product, etc.) even if the files have been renamed Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unlikely. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 37c1333a-a0db-48be-b64b-7393b2386e3b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_execution_via_pe_metadata.yml"
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1588.002
+      - T1003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and xdm.target.process.company ~= "^Cube0x0$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hh-exe-execution-68c8acb4
+    name: HH.EXE Execution
+    description: 'Detects the execution of "hh.exe" to open ".chm" files. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: False positives are expected with legitimate ".CHM". Sigma rule by E.M. Anhaus (originally from Atomic Blue Detections, Dan Beavin), oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 68c8acb4-1b60-4890-8e82-3ddf7a6dba84. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hh_chm_execution.yml'
+    kind: bioc
+    severity: low
+    category: process_creation
+    mitre:
+      - T1218.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.original_file_name ~= "^HH\\.exe$" or xdm.target.process.executable.path ~= "\\\\hh\\.exe$") and xdm.target.process.command_line contains ".chm")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hiding-files-with-attrib-exe-4281cb20
+    name: Hiding Files with Attrib.exe
+    description: "Detects usage of attrib.exe to hide files from users. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: IgfxCUIService.exe hiding *.cui files via .bat script (attrib.exe a child of cmd.exe and igfxCUIService.exe is the parent of the cmd.exe); Msiexec.exe hiding desktop.ini. Sigma rule by Sami Ruohonen, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 4281cb20-2994-4580-aa63-c8b86d019934. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_attrib_hiding_files.yml"
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1564.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (((xdm.target.process.executable.path ~= "\\\\attrib\\.exe$" or xdm.target.process.original_file_name ~= "^ATTRIB\\.EXE$") and xdm.target.process.command_line contains " +h ") and not (xdm.target.process.command_line contains "\\desktop.ini ") and not ((xdm.source.process.executable.path ~= "\\\\cmd\\.exe$" and xdm.target.process.command_line ~= "^\\+R \\+H \\+S \\+A \\\\\\\\.*\\.cui$" and xdm.source.process.command_line ~= "^C:\\\\\\\\WINDOWS\\\\\\\\system32\\\\\\\\.*\\.bat$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hiding-user-account-via-specialaccount-9ec9fb1b
+    name: Hiding User Account Via SpecialAccounts Registry Key - CommandLine
+    description: 'Detects changes to the registry key "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\Userlist" where the value is set to "0" in order to hide user account from being listed on the logon screen. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: System administrator activities. Sigma rule by @Kostastsale, TheDFIRReport, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9ec9fb1b-e059-4489-9642-f270c207923d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_registry_special_accounts_hide_user.yml'
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1564.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\reg\\.exe$" and (xdm.target.process.command_line ~= "\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Winlogon\\\\SpecialAccounts\\\\UserList" and xdm.target.process.command_line ~= "add" and xdm.target.process.command_line ~= "/v" and xdm.target.process.command_line ~= "/d 0"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hktl-sharpsuccessor-privilege-escalati-38a1ac5f
+    name: HKTL - SharpSuccessor Privilege Escalation Tool Execution
+    description: |-
+      Detects the execution of SharpSuccessor, a tool used to exploit the BadSuccessor attack for privilege escalation in WinServer 2025 Active Directory environments.
+      Successful usage of this tool can let the attackers gain the domain admin privileges by exploiting the BadSuccessor vulnerability. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 38a1ac5f-9c74-47d2-a345-dd6f5eb4e7c8. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hktl_sharpsuccessor_execution.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1068
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\SharpSuccessor\\.exe$" or xdm.target.process.original_file_name ~= "^SharpSuccessor\\.exe$" or xdm.target.process.command_line contains "SharpSuccessor" or (xdm.target.process.command_line ~= " add " and xdm.target.process.command_line ~= " /impersonate" and xdm.target.process.command_line ~= " /path" and xdm.target.process.command_line ~= " /account" and xdm.target.process.command_line ~= " /name"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hypervisor-protected-code-integrity-hv-6225c53a
+    name: Hypervisor-protected Code Integrity (HVCI) Related Registry Tampering Via CommandLine
+    description: |-
+      Detects the tampering of Hypervisor-protected Code Integrity (HVCI) related registry values via command line tool reg.exe.
+      HVCI uses virtualization-based security to protect code integrity by ensuring that only trusted code can run in kernel mode.
+      Adversaries may tamper with HVCI to load malicious or unsigned drivers, which can be used to escalate privileges, maintain persistence, or evade security mechanisms. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Legitimate system administration tasks that require disabling HVCI for troubleshooting purposes when certain drivers or applications are incompatible with it.. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 6225c53a-a96e-4235-b28f-8d7997cd96eb. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_hvci_registry_tampering.yml
+    kind: bioc
+    severity: high
+    category: process_creation
+    mitre:
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "(?:\\\\powershell\\.exe|\\\\pwsh\\.exe|\\\\reg\\.exe)$" or xdm.target.process.original_file_name ~= "^(?:PowerShell\\.EXE|pwsh\\.dll|reg\\.exe)$") and xdm.target.process.command_line ~= "(?:add |New-ItemProperty |Set-ItemProperty |si )" and xdm.target.process.command_line contains "\\DeviceGuard" and xdm.target.process.command_line ~= "(?:EnableVirtualizationBasedSecurity|HypervisorEnforcedCodeIntegrity)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: ie4uinit-lolbin-use-from-invalid-path-d3bf399f
+    name: Ie4uinit Lolbin Use From Invalid Path
+    description: 'Detect use of ie4uinit.exe to execute commands from a specially prepared ie4uinit.inf file from a directory other than the usual directories Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: ViberPC updater calls this binary with the following commandline "ie4uinit.exe -ClearIconCache". Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id d3bf399f-b0cf-4250-8bb4-dfc192ab81dc. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_lolbin_ie4uinit.yml'
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1218
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\ie4uinit\\.exe$" or xdm.target.process.original_file_name ~= "^IE4UINIT\\.EXE$") and not ((xdm.target.process.current_directory ~= "^(?:c:\\\\windows\\\\system32\\\\|c:\\\\windows\\\\sysWOW64\\\\)$" or not (xdm.target.process.current_directory ~= "."))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: iis-webserver-log-deletion-via-command-0649be4a
+    name: IIS WebServer Log Deletion via CommandLine Utilities
+    description: |-
+      Detects attempts to delete Internet Information Services (IIS) log files via command line utilities, which is a common defense evasion technique used by attackers to cover their tracks.
+      Threat actors often abuse vulnerabilities in web applications hosted on IIS servers to gain initial access and later delete IIS logs to evade detection. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Deletion of IIS logs that are older than a certain retention period as part of regular maintenance activities.; Legitimate schedule tasks or scripts that clean up log files regularly.. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0649be4a-aeb0-45b0-b89e-7f1668f6d9c0. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_iis_logs_deletion.yml
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1070
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "(?:\\\\cmd\\.exe|\\\\powershell_ise\\.exe|\\\\powershell\\.exe|\\\\pwsh\\.exe)$" or xdm.target.process.original_file_name ~= "^(?:cmd\\.exe|powershell\\.exe|powershell_ise\\.exe|pwsh\\.dll)$") and xdm.target.process.command_line ~= "(?:del |erase |rm |remove-item |rmdir )" and xdm.target.process.command_line contains "\\inetpub\\logs\\")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: import-ldap-data-interchange-format-fi-6f535e01
+    name: Import LDAP Data Interchange Format File Via Ldifde.EXE
+    description: 'Detects the execution of "Ldifde.exe" with the import flag "-i". The can be abused to include HTTP-based arguments which will allow the arbitrary download of files from a remote server. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Since the content of the files are unknown, false positives are expected. Sigma rule by @gott_cyber, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 6f535e01-ca1f-40be-ab8d-45b19c0c8b7f. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_ldifde_file_load.yml'
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1218
+      - T1105
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "\\\\ldifde\\.exe$" or xdm.target.process.original_file_name ~= "^ldifde\\.exe$") and (xdm.target.process.command_line ~= "-i" and xdm.target.process.command_line ~= "-f"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: indirect-command-execution-from-script-2d22a514
+    name: Indirect Command Execution From Script File Via Bash.EXE
+    description: |-
+      Detects execution of Microsoft bash launcher without any flags to execute the content of a bash script directly.
+      This can be used to potentially bypass defenses and execute Linux or Windows-based binaries directly via bash. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 1). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 2d22a514-e024-4428-9dba-41505bd63a5b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_bash_file_execution.yml
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1202
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and ((xdm.target.process.executable.path ~= "(?::\\\\Windows\\\\System32\\\\bash\\.exe|:\\\\Windows\\\\SysWOW64\\\\bash\\.exe)$" or xdm.target.process.original_file_name ~= "^Bash\\.exe$") and not ((xdm.target.process.command_line ~= "(?:bash\\.exe -|bash -)" or not (xdm.target.process.command_line ~= ".") or not (xdm.target.process.command_line ~= ".") or xdm.target.process.command_line ~= "^(?:bash\\.exe|bash)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: indirect-command-execution-via-sftp-pr-762bb580
+    name: Indirect Command Execution via SFTP ProxyCommand
+    description: |-
+      Detects the use of SFTP.exe to execute commands indirectly via ProxyCommand parameter.
+      Threat actors were seen leveraging this legitimate Windows binary to bypass security controls and execute arbitrary commands while evading detection. Needs: Windows process creation: Sysmon event 1 (or Windows event 4688 with command-line auditing, for rules that only use Image, CommandLine and ParentImage). Known false positives: Legitimate use of SFTP with proxy commands for administration or networking tasks. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 762bb580-79b4-40f4-8b9e-9349ce1710f4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/process_creation/proc_creation_win_sftp_proxy_command_execution.yml
+    kind: bioc
+    severity: medium
+    category: process_creation
+    mitre:
+      - T1202
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "process" and (xdm.target.process.executable.path ~= "\\\\sftp\\.exe$" and xdm.target.process.command_line contains "ProxyCommand=")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 2026.1118.0
+    released: 2026-11-18
+    notes: Converted from the SigmaHQ rules at 698f0912f571d5fac3bf8c51f5421139834a011c.

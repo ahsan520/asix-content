@@ -1,0 +1,221 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: palo-alto-pan-os
+name: Palo Alto Networks PAN-OS firewall
+description: Reads PAN-OS TRAFFIC and THREAT syslog into the ASIX data model and watches for critical threats that were not blocked, critical threats and floods of denied connections.
+version: 1.0.0
+audience: enterprise
+publisher:
+  name: ASIX
+certification: community
+supported_by: community
+tags:
+  - palo-alto
+  - pan-os
+  - firewall
+  - network
+sources:
+  - PAN-OS syslog, default format, TRAFFIC and THREAT logs (Device, Server Profiles, Syslog; Objects, Log Forwarding)
+parsers:
+  - key: traffic
+    name: PAN-OS TRAFFIC log
+    description: "Connections through the firewall: source and destination, zones, application, rule, protocol and action."
+    parsing: |-
+      [INGEST:vendor="paloalto", product="pan-os", no_hit=keep, content_id="paloalto_panos_traffic"]
+      filter _raw ~= "[0-9]{4}/[0-9]{2}/[0-9]{2} [0-9:]{8},[^,]{0,20},TRAFFIC,"
+      | alter
+          event_category = "network_connection",
+          src_ip = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){7}([^,]{0,100})"), 0),
+          dest_ip = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){8}([^,]{0,100})"), 0),
+          nat_src_ip = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){9}([^,]{0,100})"), 0),
+          nat_dest_ip = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){10}([^,]{0,100})"), 0),
+          pan_rule = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){11}([^,]{0,100})"), 0),
+          src_user = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){12}([^,]{0,100})"), 0),
+          pan_app = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){14}([^,]{0,100})"), 0),
+          src_zone = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){16}([^,]{0,100})"), 0),
+          dest_zone = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){17}([^,]{0,100})"), 0),
+          src_port = to_integer(arrayindex(regextract(_raw, "^(?:[^,]{0,100},){24}([^,]{0,100})"), 0)),
+          dest_port = to_integer(arrayindex(regextract(_raw, "^(?:[^,]{0,100},){25}([^,]{0,100})"), 0)),
+          protocol = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){29}([^,]{0,100})"), 0),
+          pan_action = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){30}([^,]{0,100})"), 0),
+          pan_subtype = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){4}([^,]{0,100})"), 0);
+    model: |-
+      [MODEL: dataset=syslog]
+      filter _content_id = "paloalto_panos_traffic"
+      | alter
+          xdm.event.type = "network_connection",
+          xdm.event.original_event_type = "panos-traffic",
+          xdm.event.operation = pan_action,
+          xdm.event.outcome = if(pan_action in ("allow", "alert"), XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.description = concat("PAN-OS ", pan_action, " ", lowercase(protocol), " ", src_ip, " to ", dest_ip, ":", to_string(dest_port), " (", pan_app, ", rule ", pan_rule, ")"),
+          xdm.event.tags = arraycreate(pan_app, src_zone, dest_zone),
+          xdm.source.ipv4 = src_ip,
+          xdm.source.port = src_port,
+          xdm.target.ipv4 = dest_ip,
+          xdm.target.port = dest_port,
+          xdm.source.user.username = src_user,
+          xdm.network.ip_protocol = lowercase(protocol);
+    samples:
+      - raw: <14>Nov 16 10:00:00 PA-VM 1,2026/11/16 10:00:00,007051000012345,TRAFFIC,end,2561,2026/11/16 10:00:00,203.0.113.9,10.1.1.10,192.0.2.1,10.1.1.10,Inbound-Web,,,ssl,vsys1,untrust,trust,ethernet1/1,ethernet1/2,Forward-Logs,2026/11/16 10:00:00,123456,1,51234,443,51234,443,0x19,tcp,allow,5234,1203,4031,18,2026/11/16 10:00:00,30,any,0
+        expect:
+          src_ip: 203.0.113.9
+          dest_ip: 10.1.1.10
+          pan_rule: Inbound-Web
+          pan_app: ssl
+          src_zone: untrust
+          dest_zone: trust
+          src_port: 51234
+          dest_port: 443
+          protocol: tcp
+          pan_action: allow
+          _content_id: paloalto_panos_traffic
+        xdm:
+          xdm.source.ipv4: 203.0.113.9
+          xdm.target.ipv4: 10.1.1.10
+          xdm.target.port: 443
+          xdm.event.outcome: SUCCESS
+          xdm.network.ip_protocol: tcp
+      - raw: <14>Nov 16 10:00:05 PA-VM 1,2026/11/16 10:00:05,007051000012345,TRAFFIC,end,2561,2026/11/16 10:00:05,198.51.100.7,10.1.1.20,0.0.0.0,0.0.0.0,Block-All,,,not-applicable,vsys1,untrust,trust,ethernet1/1,ethernet1/2,Forward-Logs,2026/11/16 10:00:05,123457,1,40022,3389,0,0,0x0,tcp,deny,60,60,0,1,2026/11/16 10:00:05,0,any,0
+        expect:
+          src_ip: 198.51.100.7
+          dest_port: 3389
+          pan_action: deny
+          pan_rule: Block-All
+        xdm:
+          xdm.event.outcome: FAILED
+          xdm.event.original_event_type: panos-traffic
+        fires:
+          - deny-flood
+  - key: threat
+    name: PAN-OS THREAT log
+    description: "Vulnerability, spyware, virus, URL and WildFire detections: the same connection fields plus threat name, severity and direction."
+    parsing: |-
+      [INGEST:vendor="paloalto", product="pan-os", no_hit=keep, content_id="paloalto_panos_threat"]
+      filter _raw ~= "[0-9]{4}/[0-9]{2}/[0-9]{2} [0-9:]{8},[^,]{0,20},THREAT,"
+      | alter
+          event_category = "threat",
+          src_ip = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){7}([^,]{0,100})"), 0),
+          dest_ip = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){8}([^,]{0,100})"), 0),
+          nat_src_ip = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){9}([^,]{0,100})"), 0),
+          nat_dest_ip = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){10}([^,]{0,100})"), 0),
+          pan_rule = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){11}([^,]{0,100})"), 0),
+          src_user = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){12}([^,]{0,100})"), 0),
+          pan_app = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){14}([^,]{0,100})"), 0),
+          src_zone = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){16}([^,]{0,100})"), 0),
+          dest_zone = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){17}([^,]{0,100})"), 0),
+          src_port = to_integer(arrayindex(regextract(_raw, "^(?:[^,]{0,100},){24}([^,]{0,100})"), 0)),
+          dest_port = to_integer(arrayindex(regextract(_raw, "^(?:[^,]{0,100},){25}([^,]{0,100})"), 0)),
+          protocol = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){29}([^,]{0,100})"), 0),
+          pan_action = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){30}([^,]{0,100})"), 0),
+          pan_subtype = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){4}([^,]{0,100})"), 0),
+          threat_name = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){32}([^,]{0,100})"), 0),
+          threat_severity = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){34}([^,]{0,100})"), 0),
+          threat_direction = arrayindex(regextract(_raw, "^(?:[^,]{0,100},){35}([^,]{0,100})"), 0);
+    model: |-
+      [MODEL: dataset=syslog]
+      filter _content_id = "paloalto_panos_threat"
+      | alter
+          xdm.event.type = "network_connection",
+          xdm.event.original_event_type = "panos-threat",
+          xdm.event.operation = pan_action,
+          xdm.event.outcome = if(pan_action in ("allow", "alert"), XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.description = concat("PAN-OS threat ", pan_subtype, ": ", threat_name, " (", threat_severity, ", ", pan_action, ")"),
+          xdm.event.tags = arraycreate(pan_subtype, threat_severity, pan_app),
+          xdm.source.ipv4 = src_ip,
+          xdm.source.port = src_port,
+          xdm.target.ipv4 = dest_ip,
+          xdm.target.port = dest_port,
+          xdm.source.user.username = src_user,
+          xdm.network.ip_protocol = lowercase(protocol);
+    samples:
+      - raw: <14>Nov 16 10:00:09 PA-VM 1,2026/11/16 10:00:09,007051000012345,THREAT,vulnerability,2561,2026/11/16 10:00:09,203.0.113.9,10.1.1.10,192.0.2.1,10.1.1.10,Inbound-Web,,,web-browsing,vsys1,untrust,trust,ethernet1/1,ethernet1/2,Forward-Logs,2026/11/16 10:00:09,123458,1,51240,80,51240,80,0x2000,tcp,reset-both,"example.com/cgi-bin/test.cgi",Apache Log4j Remote Code Execution Vulnerability(91991),any,critical,client-to-server,987654
+        expect:
+          src_ip: 203.0.113.9
+          dest_ip: 10.1.1.10
+          pan_subtype: vulnerability
+          pan_action: reset-both
+          threat_severity: critical
+          threat_direction: client-to-server
+          dest_port: 80
+        xdm:
+          xdm.event.outcome: FAILED
+          xdm.event.original_event_type: panos-threat
+          xdm.target.port: 80
+        fires:
+          - critical-threat
+      - raw: <14>Nov 16 10:00:09 PA-VM 1,2026/11/16 10:00:09,007051000012345,THREAT,vulnerability,2561,2026/11/16 10:00:09,203.0.113.9,10.1.1.10,192.0.2.1,10.1.1.10,Inbound-Web,,,web-browsing,vsys1,untrust,trust,ethernet1/1,ethernet1/2,Forward-Logs,2026/11/16 10:00:09,123458,1,51240,80,51240,80,0x2000,tcp,alert,"example.com/cgi-bin/test.cgi",Apache Log4j Remote Code Execution Vulnerability(91991),any,critical,client-to-server,987654
+        expect:
+          pan_action: alert
+          threat_severity: critical
+        xdm:
+          xdm.event.outcome: SUCCESS
+        fires:
+          - critical-threat
+          - threat-not-blocked
+rules:
+  - key: critical-threat
+    name: "PAN-OS: critical or high severity threat"
+    description: The firewall logged a critical or high severity threat (exploit attempt, malware, command and control). Read the threat name in the alert.
+    kind: bioc
+    severity: high
+    category: Initial Access
+    mitre:
+      - T1190
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "panos-threat" and xdm.event.description ~= "\\((critical|high),"
+      group_by: field:xdm.source.ipv4
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: threat-not-blocked
+    name: "PAN-OS: critical threat that was not blocked"
+    description: A critical threat was only alerted or allowed, not blocked. The attack may have reached the target.
+    kind: bioc
+    severity: critical
+    category: Initial Access
+    mitre:
+      - T1190
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "panos-threat" and xdm.event.outcome = "SUCCESS" and xdm.event.description ~= "\\(critical,"
+      group_by: field:xdm.target.ipv4
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: deny-flood
+    name: "PAN-OS: many denied connections from one address"
+    description: One source had 100 or more connections denied in 5 minutes. Often a scan or a brute-force attempt that the firewall is absorbing.
+    kind: correlation
+    severity: medium
+    category: Discovery
+    mitre:
+      - T1046
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "panos-traffic" and xdm.event.outcome = "FAILED"
+      group_by: field:xdm.source.ipv4
+      threshold: 100
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 1.0.0
+    released: 2026-11-16
+    notes: "First release: TRAFFIC and THREAT parsers, data model mapping, three detections."

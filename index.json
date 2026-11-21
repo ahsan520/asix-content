@@ -1,0 +1,1255 @@
+{
+  "format": 1,
+  "name": "asix-content",
+  "generated": "2026-11-21T17:10:13Z",
+  "packs": [
+    {
+      "id": "aws-cloudtrail",
+      "version": "1.0.0",
+      "name": "AWS CloudTrail",
+      "description": "Reads AWS CloudTrail management events (console sign-ins and API calls) into the ASIX data model and watches for root use, sign-ins without MFA, login guessing, logging switched off, IAM privilege changes, access denied bursts and possible public exposure.",
+      "publisher": {
+        "name": "ASIX"
+      },
+      "certification": "community",
+      "tags": [
+        "aws",
+        "cloudtrail",
+        "cloud",
+        "iam"
+      ],
+      "vendors": [
+        "amazon"
+      ],
+      "contents": {
+        "rules": 7,
+        "parsers": 2
+      },
+      "file": "packs/aws-cloudtrail.pack.yaml",
+      "sha256": "34b92435ac8ea562dc4d3647966114cf94293960c45e8a937905a6d8a8a2a825",
+      "size": 20730
+    },
+    {
+      "id": "azure-activity",
+      "version": "1.0.0",
+      "name": "Azure Activity Log",
+      "description": "Reads the Azure Activity Log (administrative operations on subscriptions and resources) into the ASIX data model and watches for role assignments, network security rule changes, diagnostic settings removed, resource group deletion and refused operations.",
+      "publisher": {
+        "name": "ASIX"
+      },
+      "certification": "community",
+      "tags": [
+        "azure",
+        "activity-log",
+        "cloud",
+        "rbac"
+      ],
+      "vendors": [
+        "microsoft"
+      ],
+      "contents": {
+        "rules": 5,
+        "parsers": 1
+      },
+      "file": "packs/azure-activity.pack.yaml",
+      "sha256": "e0f98474d3890c22b581fad4b65eed4ccb6f7ef4a49d08106cdf27c50fb4fdc8",
+      "size": 13412
+    },
+    {
+      "id": "cisco-asa",
+      "version": "1.0.0",
+      "name": "Cisco ASA firewall",
+      "description": "Reads Cisco ASA syslog (denies, connections, VPN and AAA logins, management logins) into the ASIX data model and watches for login guessing, deny floods and management logins.",
+      "publisher": {
+        "name": "ASIX"
+      },
+      "certification": "community",
+      "tags": [
+        "cisco",
+        "asa",
+        "firewall",
+        "vpn",
+        "network"
+      ],
+      "vendors": [
+        "cisco"
+      ],
+      "contents": {
+        "rules": 3,
+        "parsers": 4
+      },
+      "file": "packs/cisco-asa.pack.yaml",
+      "sha256": "411de4c58de0e043c748104601da6866dc4cea93e4bd01a2e97d473da73a2466",
+      "size": 12581
+    },
+    {
+      "id": "fortinet-fortigate",
+      "version": "1.0.0",
+      "name": "Fortinet FortiGate firewall",
+      "description": "Reads FortiGate syslog (forward traffic, administrator logins, IPS detections) into the ASIX data model and watches for admin password guessing, blocked critical attacks and deny floods.",
+      "publisher": {
+        "name": "ASIX"
+      },
+      "certification": "community",
+      "tags": [
+        "fortinet",
+        "fortigate",
+        "firewall",
+        "network"
+      ],
+      "vendors": [
+        "fortinet"
+      ],
+      "contents": {
+        "rules": 3,
+        "parsers": 3
+      },
+      "file": "packs/fortinet-fortigate.pack.yaml",
+      "sha256": "701f4caa145c1e1daea772d06f1052a213767185d0dd83b64af4048ba673e144",
+      "size": 12732
+    },
+    {
+      "id": "home-linux",
+      "version": "1.0.0",
+      "name": "Home Linux server",
+      "description": "SSH and sudo watching for a Linux machine at home: logins from the internet, password logins, guessing of usernames, root attempts, and a few risky commands.",
+      "publisher": {
+        "name": "ASIX"
+      },
+      "certification": "certified",
+      "tags": [
+        "linux",
+        "home"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 8,
+        "parsers": 0
+      },
+      "file": "packs/home-linux.pack.yaml",
+      "sha256": "6f9f45b1f6a9aee6d8db727082488d5a9414999c8826442f05ada2c54a98b55f",
+      "size": 5740
+    },
+    {
+      "id": "home-macos",
+      "version": "1.0.0",
+      "name": "Home Mac",
+      "description": "Catches commands that weaken macOS protections or give a program permanent access: Gatekeeper, SIP, quarantine, LaunchAgents, Keychain and Remote Login.",
+      "publisher": {
+        "name": "ASIX"
+      },
+      "certification": "certified",
+      "tags": [
+        "macos",
+        "home"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 9,
+        "parsers": 0
+      },
+      "file": "packs/home-macos.pack.yaml",
+      "sha256": "e9f5911ddbeb0cb0c2df262b21b3ac2041e9c542322638e90267f815409f8577",
+      "size": 5736
+    },
+    {
+      "id": "home-router",
+      "version": "1.0.0",
+      "name": "Home router and firewall",
+      "description": "Watches the router: failed admin logins, wifi password guessing, new UPnP port openings and floods of blocked traffic.",
+      "publisher": {
+        "name": "ASIX"
+      },
+      "certification": "certified",
+      "tags": [
+        "router",
+        "firewall",
+        "openwrt",
+        "home"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 5,
+        "parsers": 0
+      },
+      "file": "packs/home-router.pack.yaml",
+      "sha256": "4bcbdd177466f4ef6e7bcb09a154f9431b7b534a6cbfa9508ab197fea6f24d01",
+      "size": 3504
+    },
+    {
+      "id": "microsoft-365",
+      "version": "1.0.0",
+      "name": "Microsoft 365 unified audit log",
+      "description": "Reads the Microsoft 365 audit log (Exchange, SharePoint and OneDrive, sign-ins) into the ASIX data model and watches for mail forwarding and hiding rules, mailbox forwarding and permissions, mass downloads, anonymous sharing links and login guessing.",
+      "publisher": {
+        "name": "ASIX"
+      },
+      "certification": "community",
+      "tags": [
+        "microsoft",
+        "office365",
+        "m365",
+        "exchange",
+        "sharepoint",
+        "onedrive",
+        "cloud"
+      ],
+      "vendors": [
+        "microsoft"
+      ],
+      "contents": {
+        "rules": 6,
+        "parsers": 3
+      },
+      "file": "packs/microsoft-365.pack.yaml",
+      "sha256": "0fe4046772d9dceb04051579c86c091bc639832c4cde349b719af469594f93b0",
+      "size": 17470
+    },
+    {
+      "id": "microsoft-entra-id",
+      "version": "1.0.0",
+      "name": "Microsoft Entra ID",
+      "description": "Reads Entra ID sign-in logs and audit logs into the ASIX data model and watches for sign-in guessing, risky sign-ins, privileged role assignments, conditional access changes and new application credentials.",
+      "publisher": {
+        "name": "ASIX"
+      },
+      "certification": "community",
+      "tags": [
+        "microsoft",
+        "entra",
+        "azure-ad",
+        "identity",
+        "cloud"
+      ],
+      "vendors": [
+        "microsoft"
+      ],
+      "contents": {
+        "rules": 5,
+        "parsers": 2
+      },
+      "file": "packs/microsoft-entra-id.pack.yaml",
+      "sha256": "8ddd32c7378181c5a151abca3010c6a4c966e1457939414977093b046f2decb1",
+      "size": 15371
+    },
+    {
+      "id": "palo-alto-pan-os",
+      "version": "1.0.0",
+      "name": "Palo Alto Networks PAN-OS firewall",
+      "description": "Reads PAN-OS TRAFFIC and THREAT syslog into the ASIX data model and watches for critical threats that were not blocked, critical threats and floods of denied connections.",
+      "publisher": {
+        "name": "ASIX"
+      },
+      "certification": "community",
+      "tags": [
+        "palo-alto",
+        "pan-os",
+        "firewall",
+        "network"
+      ],
+      "vendors": [
+        "paloalto"
+      ],
+      "contents": {
+        "rules": 3,
+        "parsers": 2
+      },
+      "file": "packs/palo-alto-pan-os.pack.yaml",
+      "sha256": "6289c3398d54fe88a97606bb694e9c2f0d8375af8908ac21b52291ce91b7289a",
+      "size": 11392
+    },
+    {
+      "id": "sigma-windows-dns-query-01",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows dns query",
+      "description": "22 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows dns query events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "dns-query"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 22,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-dns-query-01.pack.yaml",
+      "sha256": "25e1b3df55b335811b3a589d059eb9a004f97ea40f6a3deb4bb036c52c78b2f9",
+      "size": 36768
+    },
+    {
+      "id": "sigma-windows-file-delete-01",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows file delete",
+      "description": "10 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows file delete events, grouped by tactic, starting with file_delete. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "file-delete"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 10,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-file-delete-01.pack.yaml",
+      "sha256": "4bd3a61e46b8b6ddf0f9b702b5a3d31a62fd9daae8ef4a8e5bf9141dbba9cb54",
+      "size": 14882
+    },
+    {
+      "id": "sigma-windows-file-event-01",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows file event (1 of 4)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows file event events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "file-event"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-file-event-01.pack.yaml",
+      "sha256": "abd7891f2137d822e81ded3f59d1fe0583805f9f1620c6b2c7ce08328fec5f4e",
+      "size": 77404
+    },
+    {
+      "id": "sigma-windows-file-event-02",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows file event (2 of 4)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows file event events, grouped by tactic file_event. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "file-event"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-file-event-02.pack.yaml",
+      "sha256": "bdb53fe12bed256152baf0d8cbf383ab6536926424b25c5977b666a28d82320d",
+      "size": 76032
+    },
+    {
+      "id": "sigma-windows-file-event-03",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows file event (3 of 4)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows file event events, grouped by tactic, starting with file_event. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "file-event"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-file-event-03.pack.yaml",
+      "sha256": "d4056fe4fca48e4a4e13c049138885976e5a2c72abf46cd7a01faea167a861f0",
+      "size": 78886
+    },
+    {
+      "id": "sigma-windows-file-event-04",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows file event (4 of 4)",
+      "description": "9 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows file event events, grouped by tactic Persistence. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "file-event"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 9,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-file-event-04.pack.yaml",
+      "sha256": "37980f2d8c2a632f426002c3b2cfd67ddcf5d2672934cc0b4c585dc787bb22c7",
+      "size": 13020
+    },
+    {
+      "id": "sigma-windows-image-load-01",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows image load (1 of 2)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows image load events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "image-load"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-image-load-01.pack.yaml",
+      "sha256": "abb33ad0cd634b77ce75d8697556d85e3380818df845ba310c58bb255a3a8719",
+      "size": 82817
+    },
+    {
+      "id": "sigma-windows-image-load-02",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows image load (2 of 2)",
+      "description": "34 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows image load events, grouped by tactic Persistence. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "image-load"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 34,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-image-load-02.pack.yaml",
+      "sha256": "8672f8985454555144e7909db127b7df1e7e790c48df2d9d33b1585cc60c7a81",
+      "size": 48082
+    },
+    {
+      "id": "sigma-windows-network-connection-01",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows network connection",
+      "description": "32 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows network connection events, grouped by tactic, starting with Discovery. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "network-connection"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 32,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-network-connection-01.pack.yaml",
+      "sha256": "c2bb82ce4f5d2e98bc2cea5f68b1dff6a3f3ee0d6fe074296113c902f457e5ab",
+      "size": 57994
+    },
+    {
+      "id": "sigma-windows-process-access-01",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process access",
+      "description": "7 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process access events, grouped by tactic, starting with Execution. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-access"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 7,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-access-01.pack.yaml",
+      "sha256": "2a2710b131bfe5305fc3ac6ade23f3cce8e4a828c86afa81075ef721d4041a80",
+      "size": 12382
+    },
+    {
+      "id": "sigma-windows-process-creation-01",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (1 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-01.pack.yaml",
+      "sha256": "cdc69785c9ce6050db236d887beac3a84bd826656d3435017fe9bcc010f47596",
+      "size": 74905
+    },
+    {
+      "id": "sigma-windows-process-creation-02",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (2 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic Discovery. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-02.pack.yaml",
+      "sha256": "8831929b64630f7053411ba33af0237f600b9dc7fea399100615bd822a1cd281",
+      "size": 79922
+    },
+    {
+      "id": "sigma-windows-process-creation-03",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (3 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic, starting with Discovery. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-03.pack.yaml",
+      "sha256": "06541b3a071d6ce79cd0d31094bbe7a767be8187e74b8f351d0a9860e2f0ba26",
+      "size": 73713
+    },
+    {
+      "id": "sigma-windows-process-creation-04",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (4 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic Execution. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-04.pack.yaml",
+      "sha256": "cbbec7fb3a2f6a0364706217ac7bd8f18835eddbc8de6d5ce25035f9268d7484",
+      "size": 82201
+    },
+    {
+      "id": "sigma-windows-process-creation-05",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (5 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic Execution. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-05.pack.yaml",
+      "sha256": "84f721c538d167b30154119a162f63c3f3ba9cc7a93fb625547148f1b6e8cae7",
+      "size": 85304
+    },
+    {
+      "id": "sigma-windows-process-creation-06",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (6 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic Execution. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-06.pack.yaml",
+      "sha256": "76175dc68846f70bf062a86dccb027681f813211dd564aff030b1e85c068ce9b",
+      "size": 85105
+    },
+    {
+      "id": "sigma-windows-process-creation-07",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (7 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic Execution. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-07.pack.yaml",
+      "sha256": "330a36d15d72ad60a70f07294c6c54b2ba6869eb59c8cf29fde617ac8c254703",
+      "size": 77942
+    },
+    {
+      "id": "sigma-windows-process-creation-08",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (8 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic Execution. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-08.pack.yaml",
+      "sha256": "681d525d3fa84d19f9cc89dcc96a7ce15a74071a72ebf778bd5174955b7a6064",
+      "size": 91346
+    },
+    {
+      "id": "sigma-windows-process-creation-09",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (9 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic, starting with Execution. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-09.pack.yaml",
+      "sha256": "d11652e0e2a13351c0de4f3e41fe38150f0c4648adfada876bf4978c6a82dcaa",
+      "size": 76885
+    },
+    {
+      "id": "sigma-windows-process-creation-10",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (10 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic, starting with Exfiltration. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-10.pack.yaml",
+      "sha256": "1fb884bb7190f6a5f0c9cd5a37f343b19720c394cc71ad8fe003af014fee817a",
+      "size": 80191
+    },
+    {
+      "id": "sigma-windows-process-creation-11",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (11 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic Persistence. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-11.pack.yaml",
+      "sha256": "69b2135f4a3a3312614200aba22dad83ec0bb8454f614d66e8dca5fda0ef3a0d",
+      "size": 78666
+    },
+    {
+      "id": "sigma-windows-process-creation-12",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (12 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic Persistence. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-12.pack.yaml",
+      "sha256": "ea78c52605f392f164f293e6d367945059084cce5b0c3e36b32cd3743aae643d",
+      "size": 86933
+    },
+    {
+      "id": "sigma-windows-process-creation-13",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (13 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic, starting with Persistence. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-13.pack.yaml",
+      "sha256": "1c6451f401857844e1b1c194623abe59cd3d220b4cf4badb476bddd2268a10b4",
+      "size": 81218
+    },
+    {
+      "id": "sigma-windows-process-creation-14",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (14 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-14.pack.yaml",
+      "sha256": "67789607bbdbd6771d34aedf8ca7c540a61e73a1b9bd363e17f80eaef2cced03",
+      "size": 82237
+    },
+    {
+      "id": "sigma-windows-process-creation-15",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (15 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-15.pack.yaml",
+      "sha256": "c7660561d93fac22cf0efe937b9b6c519715f2ea701c115578d908f7223679e5",
+      "size": 75389
+    },
+    {
+      "id": "sigma-windows-process-creation-16",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (16 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-16.pack.yaml",
+      "sha256": "13b271caa6d42f9236ef17f83df7005ae8b54884e1390336c3cf8516152aa7d0",
+      "size": 76367
+    },
+    {
+      "id": "sigma-windows-process-creation-17",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (17 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-17.pack.yaml",
+      "sha256": "95bea99a91b7273b6ef1a3e63667d320bb5bdcac526da271de498590b1cdbcb4",
+      "size": 81474
+    },
+    {
+      "id": "sigma-windows-process-creation-18",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (18 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-18.pack.yaml",
+      "sha256": "85672612f32870f6462cf4dfb3fd38f67196458db7b1b56f706a553121eebfa2",
+      "size": 85268
+    },
+    {
+      "id": "sigma-windows-process-creation-19",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (19 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-19.pack.yaml",
+      "sha256": "9c56b1fbe1357c63540c64bf052104bfc1e4ffb438fafc54aef176bf59219410",
+      "size": 79436
+    },
+    {
+      "id": "sigma-windows-process-creation-20",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (20 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-20.pack.yaml",
+      "sha256": "3276d6c2a8662eaefb12630edb3654f171e484d7c53c090a03515e1b68dc1404",
+      "size": 80130
+    },
+    {
+      "id": "sigma-windows-process-creation-21",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (21 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-21.pack.yaml",
+      "sha256": "25c9be2e80c3743b3283bd489cb01d3ad109e3556602085650cfa0d0633fbd3d",
+      "size": 82971
+    },
+    {
+      "id": "sigma-windows-process-creation-22",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (22 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-22.pack.yaml",
+      "sha256": "711ec189fd76ef8d926ada64e99472b2e697f71ce7b8407d879399566c51783d",
+      "size": 77474
+    },
+    {
+      "id": "sigma-windows-process-creation-23",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (23 of 24)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-23.pack.yaml",
+      "sha256": "75704502146c64829080f02675dac50803ce04f22e060af059a13f84fcf7bd48",
+      "size": 79024
+    },
+    {
+      "id": "sigma-windows-process-creation-24",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows process creation (24 of 24)",
+      "description": "11 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows process creation events, grouped by tactic, starting with process_creation. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "process-creation"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 11,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-process-creation-24.pack.yaml",
+      "sha256": "b7ffabe1b61d49cade51a11fb11be18856b87ff3b4281c8af830657c15867ac3",
+      "size": 19987
+    },
+    {
+      "id": "sigma-windows-registry-add-01",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows registry add",
+      "description": "1 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows registry add events, grouped by tactic Persistence. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "registry-add"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 1,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-registry-add-01.pack.yaml",
+      "sha256": "d7036d26a7b47335838cf43fe73413b618f22c986da4d3f59852e84459351e51",
+      "size": 4000
+    },
+    {
+      "id": "sigma-windows-registry-delete-01",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows registry delete",
+      "description": "10 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows registry delete events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "registry-delete"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 10,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-registry-delete-01.pack.yaml",
+      "sha256": "9fa7a3b2e821096287fc8b2d8a9ca1cf6d645b2a1afa24f9f77c1e97f1b5c394",
+      "size": 19157
+    },
+    {
+      "id": "sigma-windows-registry-event-01",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows registry event",
+      "description": "27 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows registry event events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "registry-event"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 27,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-registry-event-01.pack.yaml",
+      "sha256": "b26c869299b66b62b10214e41476860d57e0807bcd3d6c50cb32d253590e5278",
+      "size": 41487
+    },
+    {
+      "id": "sigma-windows-registry-set-01",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows registry set (1 of 4)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows registry set events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "registry-set"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-registry-set-01.pack.yaml",
+      "sha256": "a15b8ff042cdd32c14a766bec1d29d5026020a6636a0e98b89951034bb31ce18",
+      "size": 88957
+    },
+    {
+      "id": "sigma-windows-registry-set-02",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows registry set (2 of 4)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows registry set events, grouped by tactic Persistence. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "registry-set"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-registry-set-02.pack.yaml",
+      "sha256": "b8b0bbc0bf2c746c4eaec81c35bd2760c6b0ef87f4022649d5aec3c517d1a271",
+      "size": 91101
+    },
+    {
+      "id": "sigma-windows-registry-set-03",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows registry set (3 of 4)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows registry set events, grouped by tactic, starting with Persistence. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "registry-set"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-registry-set-03.pack.yaml",
+      "sha256": "e200010dd543dcb3460366f711a6aa54c00a5b1bc639296c88c47e66df737f16",
+      "size": 84399
+    },
+    {
+      "id": "sigma-windows-registry-set-04",
+      "version": "2026.1118.0",
+      "name": "Sigma: Windows registry set (4 of 4)",
+      "description": "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows registry set events, grouped by tactic registry_set. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires.",
+      "publisher": {
+        "name": "SigmaHQ community, converted for ASIX"
+      },
+      "certification": "community",
+      "license": "DRL-1.1",
+      "tags": [
+        "sigma",
+        "windows",
+        "registry-set"
+      ],
+      "vendors": [],
+      "contents": {
+        "rules": 50,
+        "parsers": 0
+      },
+      "file": "packs/sigma-windows-registry-set-04.pack.yaml",
+      "sha256": "8e7139f2195a193ef26f9c5223255f211056ddd7a72df8b1c78429bbdde2ba4c",
+      "size": 81223
+    }
+  ],
+  "sigma": {
+    "file": "sigma/index.json",
+    "repo": "SigmaHQ/sigma",
+    "commit": "698f0912f571d5fac3bf8c51f5421139834a011c",
+    "date": "2026-11-18",
+    "sha256": "3dd9f6b38a25456a8369cd76437284748658980f2a470cf86bb261232f1db9ef",
+    "size": 730902,
+    "rules": 1713
+  }
+}

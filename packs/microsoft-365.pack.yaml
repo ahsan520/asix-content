@@ -1,0 +1,319 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: microsoft-365
+name: Microsoft 365 unified audit log
+description: Reads the Microsoft 365 audit log (Exchange, SharePoint and OneDrive, sign-ins) into the ASIX data model and watches for mail forwarding and hiding rules, mailbox forwarding and permissions, mass downloads, anonymous sharing links and login guessing.
+version: 1.0.0
+audience: enterprise
+publisher:
+  name: ASIX
+certification: community
+supported_by: community
+tags:
+  - microsoft
+  - office365
+  - m365
+  - exchange
+  - sharepoint
+  - onedrive
+  - cloud
+sources:
+  - Office 365 Management Activity API content (Audit.Exchange, Audit.SharePoint, Audit.AzureActiveDirectory, Audit.General), one event per record
+collection:
+  summary: ASIX can read the Microsoft 365 audit log itself (Settings, Cloud sources). If you would rather push the records, send each one to the ASIX HTTP ingestion endpoint with anything that can post JSON (an Azure Function or a script calling the Management Activity API).
+  steps:
+    - In Microsoft 365, make sure the unified audit log is turned on (Microsoft Purview, Audit).
+    - In Entra ID, register an application with the Office 365 Management APIs application permission ActivityFeed.Read, grant admin consent, and create a client secret.
+    - In ASIX, open Settings, Integrations and add a "Microsoft cloud (Entra app registration)" with the directory (tenant) id, the application (client) id and the secret.
+    - Open Settings, Cloud sources and add "Microsoft 365 unified audit log" with that account and the content you want (Exchange, SharePoint and OneDrive, Entra ID, general). ASIX starts the subscriptions itself. The first content can take up to 12 hours to appear.
+    - Install the parsers and rules of this pack here. Parsed events are stored in the dataset m365_audit. Use Search with dataset = m365_audit to see events arriving.
+    - 'To push instead of pull: fetch the content blobs of the Management Activity API yourself and post one event per record to POST /v1/ingest/http with the header Authorization: Bearer <ingestion key>, as {"message": "<the record as JSON text, unchanged>"}.'
+  example: |-
+    curl -X POST https://<your-asix-host>/v1/ingest/http \
+      -H "Authorization: Bearer asix_ik_..." -H "Content-Type: application/json" \
+      -d '[{"message": "{\"Workload\":\"Exchange\",\"Operation\":\"New-InboxRule\", ... one audit record ... }"}]'
+parsers:
+  - key: exchange
+    name: Exchange Online audit
+    description: "Mailbox and admin actions: who, from where, what they ran, and whether the action sets up forwarding, redirecting or deleting of mail."
+    parsing: |-
+      [INGEST:vendor="microsoft", product="m365", target_dataset="m365_audit", no_hit=keep, content_id="m365_exchange"]
+      filter _raw ~= "\"Workload\"\s{0,3}:\s{0,3}\"(Exchange)\""
+      | alter
+          event_category = "cloud_api",
+          _time = concat(arrayindex(regextract(_raw, "\"CreationTime\"\s{0,3}:\s{0,3}\"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2})"), 0), "Z"),
+          op = arrayindex(regextract(_raw, "\"Operation\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          actor = arrayindex(regextract(_raw, "\"UserId\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          client_raw = arrayindex(regextract(_raw, "\"ClientIP\"\s{0,3}:\s{0,3}\"([^\"]{1,80})\""), 0),
+          src_ip = coalesce(arrayindex(regextract(client_raw, "^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})"), 0), client_raw),
+          result_status = arrayindex(regextract(_raw, "\"ResultStatus\"\s{0,3}:\s{0,3}\"([^\"]{1,30})\""), 0),
+          mail_forward = if(_raw ~= "\"Name\"\s{0,3}:\s{0,3}\"(ForwardTo|ForwardAsAttachmentTo|RedirectTo|ForwardingSmtpAddress|ForwardingAddress)\"", "true", "false"),
+          mail_delete = if(_raw ~= "\"Name\"\s{0,3}:\s{0,3}\"(DeleteMessage|MoveToFolder)\"", "true", "false"),
+          mail_note = if(mail_forward = "true", " [forwards mail]", mail_delete = "true", " [deletes or hides mail]", "");
+    model: |-
+      [MODEL: dataset=m365_audit]
+      filter _content_id = "m365_exchange"
+      | alter
+          xdm.event.type = "cloud_api",
+          xdm.event.original_event_type = "m365-exchange",
+          xdm.event.operation = op,
+          xdm.event.outcome = if(result_status in ("True", "Succeeded", "Success", "PartiallySucceeded"), XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.description = concat("M365 Exchange ", op, " by ", actor, mail_note),
+          xdm.source.ipv4 = if(src_ip ~= "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$", src_ip, null),
+          xdm.source.user.username = actor;
+    samples:
+      - raw: '{"CreationTime":"2026-11-16T10:00:00","Id":"e1","Operation":"New-InboxRule","OrganizationId":"o1","RecordType":1,"ResultStatus":"True","UserKey":"k","UserType":0,"Version":1,"Workload":"Exchange","ClientIP":"203.0.113.9:51234","UserId":"alice@contoso.com","ObjectId":"alice@contoso.com\\Inbox","Parameters":[{"Name":"Name","Value":"x"},{"Name":"ForwardTo","Value":"x"}]}'
+        expect:
+          op: New-InboxRule
+          actor: alice@contoso.com
+          src_ip: 203.0.113.9
+          mail_forward: "true"
+          mail_note: " [forwards mail]"
+        xdm:
+          xdm.event.original_event_type: m365-exchange
+          xdm.event.operation: New-InboxRule
+          xdm.event.outcome: SUCCESS
+          xdm.source.ipv4: 203.0.113.9
+        fires:
+          - inbox-rule-hides-or-forwards
+      - raw: '{"CreationTime":"2026-11-16T10:00:00","Id":"e1","Operation":"Set-Mailbox","OrganizationId":"o1","RecordType":1,"ResultStatus":"True","UserKey":"k","UserType":0,"Version":1,"Workload":"Exchange","ClientIP":"203.0.113.9:51234","UserId":"alice@contoso.com","ObjectId":"alice@contoso.com\\Inbox","Parameters":[{"Name":"ForwardingSmtpAddress","Value":"smtp:attacker@example.net"}]}'
+        expect:
+          op: Set-Mailbox
+          mail_forward: "true"
+        xdm:
+          xdm.event.operation: Set-Mailbox
+        fires:
+          - mailbox-forwarding-set
+      - raw: '{"CreationTime":"2026-11-16T10:00:00","Id":"e1","Operation":"Add-MailboxPermission","OrganizationId":"o1","RecordType":1,"ResultStatus":"True","UserKey":"k","UserType":0,"Version":1,"Workload":"Exchange","ClientIP":"203.0.113.9:51234","UserId":"alice@contoso.com","ObjectId":"alice@contoso.com\\Inbox","Parameters":[{"Name":"Identity","Value":"x"},{"Name":"AccessRights","Value":"x"}]}'
+        expect:
+          op: Add-MailboxPermission
+          mail_forward: "false"
+          mail_note: ""
+        xdm:
+          xdm.event.operation: Add-MailboxPermission
+        fires:
+          - mailbox-permission-added
+  - key: sharepoint
+    name: SharePoint and OneDrive audit
+    description: "File and sharing activity: who opened, downloaded, shared or deleted what, on which site, from where."
+    parsing: |-
+      [INGEST:vendor="microsoft", product="m365", target_dataset="m365_audit", no_hit=keep, content_id="m365_sharepoint"]
+      filter _raw ~= "\"Workload\"\s{0,3}:\s{0,3}\"(SharePoint|OneDrive)\""
+      | alter
+          event_category = "file",
+          _time = concat(arrayindex(regextract(_raw, "\"CreationTime\"\s{0,3}:\s{0,3}\"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2})"), 0), "Z"),
+          op = arrayindex(regextract(_raw, "\"Operation\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          actor = arrayindex(regextract(_raw, "\"UserId\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          client_raw = arrayindex(regextract(_raw, "\"ClientIP\"\s{0,3}:\s{0,3}\"([^\"]{1,80})\""), 0),
+          src_ip = coalesce(arrayindex(regextract(client_raw, "^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})"), 0), client_raw),
+          result_status = arrayindex(regextract(_raw, "\"ResultStatus\"\s{0,3}:\s{0,3}\"([^\"]{1,30})\""), 0),
+          site_url = arrayindex(regextract(_raw, "\"SiteUrl\"\s{0,3}:\s{0,3}\"([^\"]{1,200})\""), 0),
+          file_name = arrayindex(regextract(_raw, "\"SourceFileName\"\s{0,3}:\s{0,3}\"([^\"]{1,150})\""), 0);
+    model: |-
+      [MODEL: dataset=m365_audit]
+      filter _content_id = "m365_sharepoint"
+      | alter
+          xdm.event.type = "file",
+          xdm.event.original_event_type = "m365-sharepoint",
+          xdm.event.operation = op,
+          xdm.event.outcome = XDM_CONST.OUTCOME_SUCCESS,
+          xdm.event.description = concat("M365 ", op, " ", file_name, " by ", actor),
+          xdm.source.ipv4 = if(src_ip ~= "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$", src_ip, null),
+          xdm.source.user.username = actor,
+          xdm.target.file.filename = file_name,
+          xdm.target.file.path = site_url;
+    samples:
+      - raw: '{"CreationTime":"2026-11-16T10:00:00","Id":"s1","Operation":"FileDownloaded","OrganizationId":"o1","RecordType":6,"UserKey":"k","UserType":0,"Version":1,"Workload":"SharePoint","ClientIP":"203.0.113.9","UserId":"alice@contoso.com","SiteUrl":"https://contoso.sharepoint.com/sites/finance/","SourceFileName":"payroll.xlsx","ObjectId":"https://contoso.sharepoint.com/sites/finance/Shared Documents/payroll.xlsx"}'
+        expect:
+          op: FileDownloaded
+          file_name: payroll.xlsx
+          site_url: https://contoso.sharepoint.com/sites/finance/
+          actor: alice@contoso.com
+        xdm:
+          xdm.event.type: file
+          xdm.target.file.filename: payroll.xlsx
+          xdm.source.ipv4: 203.0.113.9
+        fires:
+          - mass-download
+      - raw: '{"CreationTime":"2026-11-16T10:00:00","Id":"s1","Operation":"AnonymousLinkCreated","OrganizationId":"o1","RecordType":6,"UserKey":"k","UserType":0,"Version":1,"Workload":"SharePoint","ClientIP":"203.0.113.9","UserId":"alice@contoso.com","SiteUrl":"https://contoso.sharepoint.com/sites/finance/","SourceFileName":"payroll.xlsx","ObjectId":"https://contoso.sharepoint.com/sites/finance/Shared Documents/payroll.xlsx"}'
+        expect:
+          op: AnonymousLinkCreated
+        xdm:
+          xdm.event.operation: AnonymousLinkCreated
+        fires:
+          - anonymous-link-created
+  - key: signin
+    name: Microsoft 365 sign-in events
+    description: UserLoggedIn and UserLoginFailed records of the Entra ID workload in the audit log.
+    parsing: |-
+      [INGEST:vendor="microsoft", product="m365", target_dataset="m365_audit", no_hit=keep, content_id="m365_signin"]
+      filter _raw ~= "\"Workload\"\s{0,3}:\s{0,3}\"(AzureActiveDirectory)\"" and _raw ~= "\"Operation\"\s{0,3}:\s{0,3}\"(UserLoggedIn|UserLoginFailed)\""
+      | alter
+          event_category = "authentication",
+          _time = concat(arrayindex(regextract(_raw, "\"CreationTime\"\s{0,3}:\s{0,3}\"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2})"), 0), "Z"),
+          op = arrayindex(regextract(_raw, "\"Operation\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          actor = arrayindex(regextract(_raw, "\"UserId\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0),
+          client_raw = arrayindex(regextract(_raw, "\"ClientIP\"\s{0,3}:\s{0,3}\"([^\"]{1,80})\""), 0),
+          src_ip = coalesce(arrayindex(regextract(client_raw, "^([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})"), 0), client_raw),
+          result_status = arrayindex(regextract(_raw, "\"ResultStatus\"\s{0,3}:\s{0,3}\"([^\"]{1,30})\""), 0),
+          login_result = if(op = "UserLoggedIn", "success", "failure");
+    model: |-
+      [MODEL: dataset=m365_audit]
+      filter _content_id = "m365_signin"
+      | alter
+          xdm.event.type = "authentication",
+          xdm.event.original_event_type = "m365-signin",
+          xdm.event.operation = op,
+          xdm.event.outcome = if(login_result = "success", XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.description = concat("M365 sign-in ", login_result, " for ", actor),
+          xdm.source.ipv4 = if(src_ip ~= "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$", src_ip, null),
+          xdm.target.user.username = actor,
+          xdm.source.user.username = actor;
+    samples:
+      - raw: '{"CreationTime":"2026-11-16T10:00:00","Id":"a1","Operation":"UserLoginFailed","OrganizationId":"o1","RecordType":15,"ResultStatus":"Success","UserKey":"k","UserType":0,"Version":1,"Workload":"AzureActiveDirectory","ClientIP":"198.51.100.7","ObjectId":"k","UserId":"alice@contoso.com"}'
+        expect:
+          op: UserLoginFailed
+          login_result: failure
+          src_ip: 198.51.100.7
+        xdm:
+          xdm.event.type: authentication
+          xdm.event.outcome: FAILED
+          xdm.target.user.username: alice@contoso.com
+        fires:
+          - login-guessing
+      - raw: '{"CreationTime":"2026-11-16T10:00:00","Id":"a1","Operation":"UserLoggedIn","OrganizationId":"o1","RecordType":15,"ResultStatus":"Success","UserKey":"k","UserType":0,"Version":1,"Workload":"AzureActiveDirectory","ClientIP":"203.0.113.9","ObjectId":"k","UserId":"alice@contoso.com"}'
+        expect:
+          login_result: success
+        xdm:
+          xdm.event.outcome: SUCCESS
+rules:
+  - key: inbox-rule-hides-or-forwards
+    name: "M365: inbox rule that forwards, redirects or hides mail"
+    description: A mailbox rule was created or changed so that mail is forwarded, redirected, moved or deleted. A classic step after a mailbox is taken over.
+    kind: bioc
+    severity: high
+    category: Collection
+    mitre:
+      - T1114.003
+      - T1564.008
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "m365-exchange" and xdm.event.operation in ("New-InboxRule", "Set-InboxRule", "UpdateInboxRules") and xdm.event.description ~= "\\[(forwards mail|deletes or hides mail)\\]$"
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: mailbox-forwarding-set
+    name: "M365: mailbox forwarding address set"
+    description: Forwarding was set on a mailbox (Set-Mailbox with a forwarding address). Mail may be leaving the organisation.
+    kind: bioc
+    severity: high
+    category: Collection
+    mitre:
+      - T1114.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "m365-exchange" and xdm.event.operation = "Set-Mailbox" and xdm.event.description ~= "\\[forwards mail\\]$"
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: mailbox-permission-added
+    name: "M365: permission added to a mailbox"
+    description: Someone was given access to a mailbox or its folders. Check the person and the reason.
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1098.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "m365-exchange" and xdm.event.operation in ("Add-MailboxPermission", "Add-RecipientPermission", "Add-MailboxFolderPermission", "Set-MailboxFolderPermission")
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: mass-download
+    name: "M365: many files downloaded by one user"
+    description: One user downloaded 100 or more files from SharePoint or OneDrive in 10 minutes. Possible data theft or a sync of everything.
+    kind: correlation
+    severity: medium
+    category: Exfiltration
+    mitre:
+      - T1530
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "m365-sharepoint" and xdm.event.operation in ("FileDownloaded", "FileSyncDownloadedFull")
+      group_by: field:xdm.source.user.username
+      threshold: 100
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: anonymous-link-created
+    name: "M365: anonymous sharing link created"
+    description: A link that anyone can use, without signing in, was created for a file or folder.
+    kind: bioc
+    severity: low
+    category: Exfiltration
+    mitre:
+      - T1567
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "m365-sharepoint" and xdm.event.operation = "AnonymousLinkCreated"
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: login-guessing
+    name: "M365: many failed logins from one address"
+    description: Ten or more failed Microsoft 365 logins from one address in 10 minutes.
+    kind: correlation
+    severity: medium
+    category: Credential Access
+    mitre:
+      - T1110
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "m365-signin" and xdm.event.outcome = "FAILED"
+      group_by: field:xdm.source.ipv4
+      threshold: 10
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 1.0.0
+    released: 2026-11-16
+    notes: "First release: Exchange, SharePoint/OneDrive and sign-in parsers, data model mapping, six detections."

@@ -1,0 +1,1109 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: sigma-windows-image-load-01
+name: "Sigma: Windows image load (1 of 2)"
+description: "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows image load events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires."
+version: 2026.1118.0
+audience: enterprise
+publisher:
+  name: SigmaHQ community, converted for ASIX
+  url: https://github.com/SigmaHQ/sigma
+certification: community
+supported_by: community
+rules_start_off: true
+tags:
+  - sigma
+  - windows
+  - image-load
+license: DRL-1.1
+sources:
+  - Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7)
+rules:
+  - key: credui-dll-loaded-by-uncommon-process-9ae01559
+    name: CredUI.DLL Loaded By Uncommon Process
+    description: 'Detects loading of "credui.dll" and related DLLs by an uncommon process. Attackers might leverage this DLL for potential use of "CredUIPromptForCredentials" or "CredUnPackAuthenticationBufferW". Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Other legitimate processes loading those DLLs in your environment.. Sigma rule by Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9ae01559-cf7e-4f8e-8e14-4c290a1b4784. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_credui_uncommon_process_load.yml'
+    kind: bioc
+    severity: medium
+    category: Collection
+    mitre:
+      - T1056.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and ((xdm.target.module.path ~= "(?:\\\\credui\\.dll|\\\\wincredui\\.dll)$" or xdm.target.module.original_file_name ~= "^(?:credui\\.dll|wincredui\\.dll)$") and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\|C:\\\\Program Files\\\\|C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SysWOW64\\\\|C:\\\\Windows\\\\SystemApps\\\\)" or xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\explorer\\.exe|C:\\\\Windows\\\\ImmersiveControlPanel\\\\SystemSettings\\.exe|C:\\\\Windows\\\\regedit\\.exe)$")) and not ((xdm.source.process.executable.path ~= "\\\\opera_autoupdate\\.exe$" or xdm.source.process.executable.path ~= "(?:\\\\procexp64\\.exe|\\\\procexp64a\\.exe|\\\\procexp\\.exe)$" or (xdm.source.process.executable.path ~= "^C:\\\\Users\\\\" and xdm.source.process.executable.path contains "\\AppData\\Local\\Microsoft\\Teams\\" and xdm.source.process.executable.path ~= "\\\\Teams\\.exe$") or (xdm.source.process.executable.path ~= "^C:\\\\Users\\\\" and xdm.source.process.executable.path contains "\\AppData\\Local\\Microsoft\\OneDrive\\"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: abusable-dll-potential-sideloading-fro-799a5f48
+    name: Abusable DLL Potential Sideloading From Suspicious Location
+    description: "Detects potential DLL sideloading of DLLs that are known to be abused from suspicious locations Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by X__Junior (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 799a5f48-0ac1-4e0f-9152-71d137d48c2a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_abused_dlls_susp_paths.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1059
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "(?:\\\\coreclr\\.dll|\\\\facesdk\\.dll|\\\\HPCustPartUI\\.dll|\\\\libcef\\.dll|\\\\ZIPDLL\\.dll)$" and (xdm.target.module.path ~= "(?::\\\\Perflogs\\\\|:\\\\Users\\\\Public\\\\|\\\\Temporary Internet|\\\\Windows\\\\Temp\\\\)" or ((xdm.target.module.path ~= ":\\\\Users\\\\" and xdm.target.module.path ~= "\\\\Favorites\\\\") or (xdm.target.module.path ~= ":\\\\Users\\\\" and xdm.target.module.path ~= "\\\\Favourites\\\\") or (xdm.target.module.path ~= ":\\\\Users\\\\" and xdm.target.module.path ~= "\\\\Contacts\\\\") or (xdm.target.module.path ~= ":\\\\Users\\\\" and xdm.target.module.path ~= "\\\\Pictures\\\\"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: clfs-sys-loaded-by-process-located-in-fb4e2211
+    name: Clfs.SYS Loaded By Process Located In a Potential Suspicious Location
+    description: "Detects Clfs.sys being loaded by a process running from a potentially suspicious location. Clfs.sys is loaded as part of many CVEs exploits that targets Common Log File. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by X__Junior, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id fb4e2211-6d08-426b-8e6f-0d4a161e3b1d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_clfs_load.yml"
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1059
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\clfs\\.sys$" and (xdm.source.process.executable.path ~= "(?::\\\\Perflogs\\\\|:\\\\Users\\\\Public\\\\|\\\\Temporary Internet|\\\\Windows\\\\Temp\\\\)" or ((xdm.source.process.executable.path ~= ":\\\\Users\\\\" and xdm.source.process.executable.path ~= "\\\\Favorites\\\\") or (xdm.source.process.executable.path ~= ":\\\\Users\\\\" and xdm.source.process.executable.path ~= "\\\\Favourites\\\\") or (xdm.source.process.executable.path ~= ":\\\\Users\\\\" and xdm.source.process.executable.path ~= "\\\\Contacts\\\\") or (xdm.source.process.executable.path ~= ":\\\\Users\\\\" and xdm.source.process.executable.path ~= "\\\\Pictures\\\\"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: clr-dll-loaded-via-office-applications-d13c43f0
+    name: CLR DLL Loaded Via Office Applications
+    description: "Detects CLR DLL being loaded by an Office Product Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Antonlovesdnb, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id d13c43f0-f66b-4279-8b2c-5912077c1780. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_office_dotnet_clr_dll_load.yml"
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1204.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "(?:\\\\excel\\.exe|\\\\mspub\\.exe|\\\\outlook\\.exe|\\\\onenote\\.exe|\\\\onenoteim\\.exe|\\\\powerpnt\\.exe|\\\\winword\\.exe)$" and xdm.target.module.path contains "\\clr.dll")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dotnet-assembly-dll-loaded-via-office-ff0f2b05
+    name: DotNET Assembly DLL Loaded Via Office Application
+    description: "Detects any assembly DLL being loaded by an Office Product Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Antonlovesdnb, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ff0f2b05-09db-4095-b96d-1b75ca24894a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_office_dotnet_assembly_dll_load.yml"
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1204.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "(?:\\\\excel\\.exe|\\\\mspub\\.exe|\\\\onenote\\.exe|\\\\onenoteim\\.exe|\\\\outlook\\.exe|\\\\powerpnt\\.exe|\\\\winword\\.exe)$" and xdm.target.module.path ~= "^C:\\\\Windows\\\\assembly\\\\")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dotnet-clr-dll-loaded-by-scripting-app-4508a70e
+    name: DotNet CLR DLL Loaded By Scripting Applications
+    description: "Detects .NET CLR DLLs being loaded by scripting applications such as wscript or cscript. This could be an indication of potential suspicious execution. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by omkar72, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 4508a70e-97ef-4300-b62b-ff27992990ea. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_susp_script_dotnet_clr_dll_load.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1055
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "(?:\\\\cmstp\\.exe|\\\\cscript\\.exe|\\\\mshta\\.exe|\\\\msxsl\\.exe|\\\\regsvr32\\.exe|\\\\wmic\\.exe|\\\\wscript\\.exe)$" and xdm.target.module.path ~= "(?:\\\\clr\\.dll|\\\\mscoree\\.dll|\\\\mscorlib\\.dll)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: gac-dll-loaded-via-office-applications-90217a70
+    name: GAC DLL Loaded Via Office Applications
+    description: "Detects any GAC DLL being loaded by an Office Product Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Legitimate macro usage. Add the appropriate filter according to your environment. Sigma rule by Antonlovesdnb, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 90217a70-13fc-48e4-b3db-0d836c5824ac. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_office_dotnet_gac_dll_load.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1204.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "(?:\\\\excel\\.exe|\\\\mspub\\.exe|\\\\onenote\\.exe|\\\\onenoteim\\.exe|\\\\outlook\\.exe|\\\\powerpnt\\.exe|\\\\winword\\.exe)$" and xdm.target.module.path ~= "^C:\\\\Windows\\\\Microsoft\\.NET\\\\assembly\\\\GAC_MSIL")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: microsoft-excel-add-in-loaded-from-unc-af4c4609
+    name: Microsoft Excel Add-In Loaded From Uncommon Location
+    description: "Detects Microsoft Excel loading an Add-In (.xll) file from an uncommon location Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Some tuning might be required to allow or remove certain locations used by the rule if you consider them as safe locations. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id af4c4609-5755-42fe-8075-4effb49f5d44. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_office_excel_xll_susp_load.yml"
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1204.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "\\\\excel\\.exe$" and xdm.target.module.path ~= "(?:\\\\Desktop\\\\|\\\\Downloads\\\\|\\\\Perflogs\\\\|\\\\Temp\\\\|\\\\Users\\\\Public\\\\|\\\\Windows\\\\Tasks\\\\)" and xdm.target.module.path ~= "\\.xll$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: microsoft-vba-for-outlook-addin-loaded-9a0b8719
+    name: Microsoft VBA For Outlook Addin Loaded Via Outlook
+    description: "Detects outlvba (Microsoft VBA for Outlook Addin) DLL being loaded by the outlook process Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Legitimate macro usage. Add the appropriate filter according to your environment. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9a0b8719-cd3c-4f0a-90de-765a4cb3f5ed. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_office_outlook_outlvba_load.yml"
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1204.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "\\\\outlook\\.exe$" and xdm.target.module.path ~= "\\\\outlvba\\.dll$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: mmc-loading-script-engines-dlls-a9c73e8b
+    name: MMC Loading Script Engines DLLs
+    description: |-
+      Detects when the Microsoft Management Console (MMC) loads the DLL libraries like vbscript, jscript etc which might indicate an attempt
+      to execute malicious scripts within a trusted system process for bypassing application whitelisting or defense evasion. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Legitimate MMC operations or extensions loading these libraries. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a9c73e8b-3b2d-4c45-8ef2-5f9a9c9998ad. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_win_mmc_loads_script_engine_dll.yml
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1059.005
+      - T1218.014
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "\\\\mmc\\.exe$" and xdm.target.module.path ~= "(?:\\\\vbscript\\.dll|\\\\jscript\\.dll|\\\\jscript9\\.dll)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: pcre-net-package-image-load-84b0a8f3
+    name: PCRE.NET Package Image Load
+    description: "Detects processes loading modules related to PCRE.NET package Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 84b0a8f3-680b-4096-a45b-e9a89221727c. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_pcre_dotnet_dll_load.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1059
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and xdm.target.module.path contains "\\AppData\\Local\\Temp\\ba9ea7344a4a5f591d6e5dc32a13494b\\"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: powershell-core-dll-loaded-by-non-powe-092bc4b9
+    name: PowerShell Core DLL Loaded By Non PowerShell Process
+    description: |-
+      Detects loading of essential DLLs used by PowerShell by non-PowerShell process.
+      Detects behavior similar to meterpreter's "load powershell" extension. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Used by some .NET binaries, minimal on user workstation.; Used by Microsoft SQL Server Management Studio. Sigma rule by Tom Kern, oscd.community, Natalia Shornikova, Tim Shelton, Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 092bc4b9-3d1d-43b4-a6b4-8c8acd83522f. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_system_management_automation_susp_load.yml
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1059.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and ((xdm.target.module.description ~= "^System\\.Management\\.Automation$" or xdm.target.module.original_file_name ~= "^System\\.Management\\.Automation\\.dll$" or xdm.target.module.path ~= "(?:\\\\System\\.Management\\.Automation\\.dll|\\\\System\\.Management\\.Automation\\.ni\\.dll)$") and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\PowerShell\\\\7-preview\\\\pwsh\\.exe|C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh\\.exe|C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1\\.0\\\\powershell_ise\\.exe|C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1\\.0\\\\powershell\\.exe|C:\\\\Windows\\\\SysWOW64\\\\WindowsPowerShell\\\\v1\\.0\\\\powershell_ise\\.exe|C:\\\\Windows\\\\SysWOW64\\\\WindowsPowerShell\\\\v1\\.0\\\\powershell\\.exe)$" or (xdm.source.process.executable.path ~= "(?:C:\\\\Program Files\\\\WindowsApps\\\\Microsoft\\.PowerShellPreview|\\\\AppData\\\\Local\\\\Microsoft\\\\WindowsApps\\\\Microsoft\\.PowerShellPreview)" and xdm.source.process.executable.path ~= "\\\\pwsh\\.exe$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\System32\\\\dsac\\.exe|C:\\\\WINDOWS\\\\System32\\\\RemoteFXvGPUDisablement\\.exe|C:\\\\Windows\\\\System32\\\\runscripthelper\\.exe|C:\\\\WINDOWS\\\\System32\\\\sdiagnhost\\.exe|C:\\\\Windows\\\\System32\\\\ServerManager\\.exe|C:\\\\Windows\\\\System32\\\\SyncAppvPublishingServer\\.exe|C:\\\\Windows\\\\System32\\\\winrshost\\.exe|C:\\\\Windows\\\\System32\\\\wsmprovhost\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\SysWOW64\\\\winrshost\\.exe|C:\\\\Windows\\\\SysWOW64\\\\wsmprovhost\\.exe)$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\Microsoft\\.NET\\\\Framework\\\\|C:\\\\Windows\\\\Microsoft\\.NET\\\\FrameworkArm\\\\|C:\\\\Windows\\\\Microsoft\\.NET\\\\FrameworkArm64\\\\|C:\\\\Windows\\\\Microsoft\\.NET\\\\Framework64\\\\)" and xdm.source.process.executable.path ~= "\\\\mscorsvw\\.exe$"))) and not (((xdm.source.process.executable.path ~= "^C:\\\\Program Files\\\\WindowsApps\\\\Microsoft\\.GetHelp_" and xdm.source.process.executable.path ~= "\\\\GetHelp\\.exe$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft SQL Server Management Studio|C:\\\\Program Files\\\\Microsoft SQL Server Management Studio)" and xdm.source.process.executable.path ~= "\\\\IDE\\\\Ssms\\.exe$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft SQL Server\\\\|C:\\\\Program Files\\\\Microsoft SQL Server\\\\)" and xdm.source.process.executable.path ~= "\\\\Tools\\\\Binn\\\\SQLPS\\.exe$") or xdm.source.process.executable.path ~= "\\\\Citrix\\\\ConfigSync\\\\ConfigSyncRun\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\\\\|C:\\\\Program Files\\\\Microsoft Visual Studio\\\\)" or xdm.source.process.executable.path ~= "^C:\\\\ProgramData\\\\chocolatey\\\\choco\\.exe" or (xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\Temp\\\\asgard2-agent\\\\" and xdm.source.process.executable.path ~= "(?:\\\\thor64\\.exe|\\\\thor\\.exe)$") or not (xdm.source.process.executable.path ~= "."))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: remote-dll-load-via-rundll32-exe-f40017b3
+    name: Remote DLL Load Via Rundll32.EXE
+    description: 'Detects a remote DLL load event via "rundll32.exe". Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f40017b3-cb2e-4335-ab5d-3babf679c1de. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_rundll32_remote_share_load.yml'
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1204.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "\\\\rundll32\\.exe$" and xdm.target.module.path ~= "^\\\\\\\\\\\\\\\\")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: vba-dll-loaded-via-office-application-e6ce8457
+    name: VBA DLL Loaded Via Office Application
+    description: "Detects VB DLL's loaded by an office application. Which could indicate the presence of VBA Macros. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Legitimate macro usage. Add the appropriate filter according to your environment. Sigma rule by Antonlovesdnb, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e6ce8457-68b1-485b-9bdd-3c2b5d679aa9. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_office_vbadll_load.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1204.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "(?:\\\\excel\\.exe|\\\\mspub\\.exe|\\\\onenote\\.exe|\\\\onenoteim\\.exe|\\\\outlook\\.exe|\\\\powerpnt\\.exe|\\\\winword\\.exe)$" and xdm.target.module.path ~= "(?:\\\\VBE7\\.DLL|\\\\VBEUI\\.DLL|\\\\VBE7INTL\\.DLL)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: wmiprvse-wbemcomn-dll-hijack-7707a579
+    name: Wmiprvse Wbemcomn DLL Hijack
+    description: "Detects a threat actor creating a file named `wbemcomn.dll` in the `C:\\Windows\\System32\\wbem\\` directory over the network and loading it for a WMI DLL Hijack scenario. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7707a579-e0d8-4886-a853-ce47e4575aaa. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_wmiprvse_wbemcomn_dll_hijack.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1047
+      - T1021.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "\\\\wmiprvse\\.exe$" and xdm.target.module.path ~= "\\\\wbem\\\\wbemcomn\\.dll$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: amsi-dll-loaded-via-lolbin-process-6ec86d9e
+    name: Amsi.DLL Loaded Via LOLBIN Process
+    description: 'Detects loading of "Amsi.dll" by a living of the land process. This could be an indication of a "PowerShell without PowerShell" attack Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 6ec86d9e-912e-4726-91a2-209359b999b9. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_amsi_suspicious_process.yml'
+    kind: bioc
+    severity: medium
+    category: image_load
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\amsi\\.dll$" and xdm.source.process.executable.path ~= "(?:\\\\ExtExport\\.exe|\\\\odbcconf\\.exe|\\\\rundll32\\.exe)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: baaupdate-exe-suspicious-dll-load-6e8fe0a8
+    name: BaaUpdate.exe Suspicious DLL Load
+    description: |-
+      Detects BitLocker Access Agent Update Utility (baaupdate.exe) loading DLLs from suspicious locations that are publicly writable which could indicate an attempt to lateral movement via BitLocker DCOM & COM Hijacking.
+      This technique abuses COM Classes configured as INTERACTIVE USER to spawn processes in the context of the logged-on user's session. Specifically, it targets the BDEUILauncher Class (CLSID ab93b6f1-be76-4185-a488-a9001b105b94)
+      which can launch BaaUpdate.exe, which is vulnerable to COM Hijacking when started with input parameters. This allows attackers to execute code in the user's context without needing to steal credentials or use additional techniques to compromise the account. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 6e8fe0a8-ba0b-4a93-8f9e-82657e7a5984. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_susp_baaupdate_dll_load.yml
+    kind: bioc
+    severity: high
+    category: image_load
+    mitre:
+      - T1218
+      - T1021.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "\\\\BaaUpdate\\.exe$" and xdm.target.module.path ~= "\\.dll$" and xdm.target.module.path ~= "(?::\\\\Perflogs\\\\|:\\\\Users\\\\Default\\\\|:\\\\Users\\\\Public\\\\|:\\\\Windows\\\\Temp\\\\|\\\\AppData\\\\Local\\\\Temp\\\\|\\\\AppData\\\\Roaming\\\\|\\\\Contacts\\\\|\\\\Favorites\\\\|\\\\Favourites\\\\|\\\\Links\\\\|\\\\Music\\\\|\\\\Pictures\\\\|\\\\ProgramData\\\\|\\\\Temporary Internet|\\\\Videos\\\\)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: diagnostic-library-sdiageng-dll-loaded-ec8c4047
+    name: Diagnostic Library Sdiageng.DLL Loaded By Msdt.EXE
+    description: 'Detects both of CVE-2022-30190 (Follina) and DogWalk vulnerabilities exploiting msdt.exe binary to load the "sdiageng.dll" library Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Greg (rule), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ec8c4047-fad9-416a-8c81-0f479353d7f6. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_sdiageng_load_by_msdt.yml'
+    kind: bioc
+    severity: high
+    category: image_load
+    mitre:
+      - T1202
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "\\\\msdt\\.exe$" and xdm.target.module.path ~= "\\\\sdiageng\\.dll$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dll-load-by-system-process-from-suspic-9e9a9002
+    name: DLL Load By System Process From Suspicious Locations
+    description: 'Detects when a system process (i.e. located in system32, syswow64, etc.) loads a DLL from a suspicious location or a location with permissive permissions such as "C:\Users\Public" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9e9a9002-56c4-40fd-9eff-e4b09bfa5f6c. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_susp_dll_load_system_process.yml'
+    kind: bioc
+    severity: medium
+    category: image_load
+    mitre:
+      - T1070
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\" and xdm.target.module.path ~= "^(?:C:\\\\Users\\\\Public\\\\|C:\\\\PerfLogs\\\\)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dll-loaded-from-suspicious-location-vi-75e508f7
+    name: DLL Loaded From Suspicious Location Via Cmspt.EXE
+    description: 'Detects cmstp loading "dll" or "ocx" files from suspicious locations Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 75e508f7-932d-4ebc-af77-269237a84ce1. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_cmstp_load_dll_from_susp_location.yml'
+    kind: bioc
+    severity: high
+    category: image_load
+    mitre:
+      - T1218.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "\\\\cmstp\\.exe$" and xdm.target.module.path ~= "(?:\\\\PerfLogs\\\\|\\\\ProgramData\\\\|\\\\Users\\\\|\\\\Windows\\\\Temp\\\\|C:\\\\Temp\\\\)" and xdm.target.module.path ~= "(?:\\.dll|\\.ocx)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-sharpevtmute-dll-load-49329257
+    name: HackTool - SharpEvtMute DLL Load
+    description: "Detects the load of EvtMuteHook.dll, a key component of SharpEvtHook, a tool that tampers with the Windows event logs Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Other DLLs with the same Imphash. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 49329257-089d-46e6-af37-4afce4290685. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_hktl_sharpevtmute.yml"
+    kind: bioc
+    severity: high
+    category: image_load
+    mitre:
+      - T1685.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and xdm.target.module.hashes contains "IMPHASH=330768A4F172E10ACB6287B87289D83B"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-silenttrinity-stager-dll-load-75c505b1
+    name: HackTool - SILENTTRINITY Stager DLL Load
+    description: "Detects SILENTTRINITY stager dll loading activity Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unlikely. Sigma rule by Aleksey Potapov, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 75c505b1-711d-4f68-a357-8c3fe37dbf2d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_hktl_silenttrinity_stager.yml"
+    kind: bioc
+    severity: high
+    category: image_load
+    mitre:
+      - T1071
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and xdm.target.module.description contains "st2stager"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-dcom-internetexplorer-applic-f354eba5
+    name: Potential DCOM InternetExplorer.Application DLL Hijack - Image Load
+    description: 'Detects potential DLL hijack of "iertutil.dll" found in the DCOM InternetExplorer.Application Class Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Roberto Rodriguez @Cyb3rWard0g, Open Threat Research (OTR), wagga, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f354eba5-623b-450f-b073-0b5b2773b6aa. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_iexplore_dcom_iertutil_dll_hijack.yml'
+    kind: bioc
+    severity: critical
+    category: image_load
+    mitre:
+      - T1021.002
+      - T1021.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "\\\\Internet Explorer\\\\iexplore\\.exe$" and xdm.target.module.path ~= "\\\\Internet Explorer\\\\iertutil\\.dll$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-dll-sideloading-using-corege-0fa66f66
+    name: Potential DLL Sideloading Using Coregen.exe
+    description: 'Detect usage of the "coregen.exe" (Microsoft CoreCLR Native Image Generator) binary to sideload arbitrary DLLs. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0fa66f66-e3f6-4a9c-93f8-4f2610b00171. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_coregen.yml'
+    kind: bioc
+    severity: medium
+    category: image_load
+    mitre:
+      - T1218
+      - T1055
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "\\\\coregen\\.exe$" and not (xdm.target.module.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft Silverlight\\\\|C:\\\\Program Files\\\\Microsoft Silverlight\\\\|C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SysWOW64\\\\)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: powershell-core-dll-loaded-via-office-bb2ba6fb
+    name: PowerShell Core DLL Loaded Via Office Application
+    description: "Detects PowerShell core DLL being loaded by an Office Product Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id bb2ba6fb-95d4-4a25-89fc-30bb736c021a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_office_powershell_dll_load.yml"
+    kind: bioc
+    severity: medium
+    category: image_load
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "(?:\\\\excel\\.exe|\\\\mspub\\.exe|\\\\outlook\\.exe|\\\\onenote\\.exe|\\\\onenoteim\\.exe|\\\\powerpnt\\.exe|\\\\winword\\.exe)$" and xdm.target.module.path ~= "(?:\\\\System\\.Management\\.Automation\\.Dll|\\\\System\\.Management\\.Automation\\.ni\\.Dll)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: python-image-load-by-non-python-proces-cbb56d62
+    name: Python Image Load By Non-Python Process
+    description: |-
+      Detects the image load of "Python Core" by a non-Python process. This might be indicative of a execution of executable that has been bundled from Python code.
+      Various tools like Py2Exe, PyInstaller, and cx_Freeze are used to bundle Python code into standalone executables.
+      Threat actors often use these tools to bundle malicious Python scripts into executables, sometimes to obfuscate the code or to bypass security measures. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Legitimate Py2Exe Binaries; Known false positive caused with Python Anaconda; Various legitimate software is bundled from Python code into executables. Sigma rule by Patrick St. John, OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id cbb56d62-4060-40f7-9466-d8aaf3123f83. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_susp_python_image_load.yml
+    kind: bioc
+    severity: low
+    category: image_load
+    mitre:
+      - T1027.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.description ~= "^Python Core$" and not ((xdm.source.process.executable.path contains "Python" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\|C:\\\\Program Files \\(x86\\)\\\\|C:\\\\ProgramData\\\\Anaconda3\\\\)")) and not (not (xdm.source.process.executable.path ~= ".")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-loading-of-dbgcore-dbghelp-416bc4a2
+    name: Suspicious Loading of Dbgcore/Dbghelp DLLs from Uncommon Location
+    description: |-
+      Detects loading of dbgcore.dll or dbghelp.dll from uncommon locations such as user directories.
+      These DLLs contain the MiniDumpWriteDump function, which can be abused for credential dumping purposes or in some cases for evading EDR/AV detection by suspending processes. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 416bc4a2-7217-4519-8dc7-c3271817f1d5. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_win_susp_dbgcore_dbghelp_load.yml
+    kind: bioc
+    severity: high
+    category: image_load
+    mitre:
+      - T1003
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "(?::\\\\Perflogs\\\\|:\\\\Temp\\\\|:\\\\Users\\\\Public\\\\|\\\\\\$Recycle\\.Bin\\\\|\\\\Contacts\\\\|\\\\Documents\\\\|\\\\Favorites\\\\|\\\\Favourites\\\\|\\\\inetpub\\\\wwwroot\\\\|\\\\Music\\\\|\\\\Pictures\\\\|\\\\Start Menu\\\\Programs\\\\Startup\\\\|\\\\Users\\\\Default\\\\|\\\\Videos\\\\)" and xdm.target.module.path ~= "(?:\\\\dbgcore\\.dll|\\\\dbghelp\\.dll)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-renamed-comsvcs-dll-loaded-8cde342c
+    name: Suspicious Renamed Comsvcs DLL Loaded By Rundll32
+    description: "Detects rundll32 loading a renamed comsvcs.dll to dump process memory Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8cde342c-ba48-4b74-b615-172c330f2e93. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_comsvcs_load_renamed_version_by_rundll32.yml"
+    kind: bioc
+    severity: high
+    category: image_load
+    mitre:
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and ((xdm.source.process.executable.path ~= "\\\\rundll32\\.exe$" and xdm.target.module.hashes ~= "(?:IMPHASH=eed93054cb555f3de70eaa9787f32ebb|IMPHASH=5e0dbdec1fce52daae251a110b4f309d|IMPHASH=eadbccbb324829acb5f2bbe87e5549a8|IMPHASH=407ca0f7b523319d758a40d7c0193699|IMPHASH=281d618f4e6271e527e6386ea6f748de)") and not (xdm.target.module.path ~= "\\\\comsvcs\\.dll$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: time-travel-debugging-utility-usage-im-e76c8240
+    name: Time Travel Debugging Utility Usage - Image
+    description: "Detects usage of Time Travel Debugging Utility. Adversaries can execute malicious processes and dump processes, such as lsass.exe, via tttracer.exe. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Legitimate usage by software developers/testers. Sigma rule by Ensar Şamil, @sblmsrsn, @oscd_initiative, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e76c8240-d68f-4773-8880-5c6f63595aaf. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_tttracer_module_load.yml"
+    kind: bioc
+    severity: high
+    category: image_load
+    mitre:
+      - T1218
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and xdm.target.module.path ~= "(?:\\\\ttdrecord\\.dll|\\\\ttdwriter\\.dll|\\\\ttdloader\\.dll)$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: uac-bypass-using-iscsicpl-imageload-9ed5959a
+    name: UAC Bypass Using Iscsicpl - ImageLoad
+    description: "Detects the \"iscsicpl.exe\" UAC bypass technique that leverages a DLL Search Order hijacking technique to load a custom DLL's from temp or a any user controlled location in the users %PATH% Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9ed5959a-c43c-4c59-84e3-d28628429456. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_uac_bypass_iscsicpl.yml"
+    kind: bioc
+    severity: high
+    category: image_load
+    mitre:
+      - T1548.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and ((xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\SysWOW64\\\\iscsicpl\\.exe$" and xdm.target.module.path ~= "\\\\iscsiexe\\.dll$") and not ((xdm.target.module.path ~= "C:\\\\Windows\\\\" and xdm.target.module.path ~= "iscsiexe\\.dll")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: wmic-loading-scripting-libraries-06ce37c2
+    name: WMIC Loading Scripting Libraries
+    description: |-
+      Detects threat actors proxy executing code and bypassing application controls by leveraging wmic and the `/FORMAT` argument switch to download and execute an XSL file (i.e js, vbs, etc).
+      It could be an indicator of SquiblyTwo technique, which uses Windows Management Instrumentation (WMI) to execute malicious code. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: The command wmic os get lastbootuptime loads vbscript.dll; The command wmic os get locale loads vbscript.dll; Since the ImageLoad event doesn't have enough information in this case. It's better to look at the recent process creation events that spawned the WMIC process and investigate the command line and parent/child processes to get more insights; The command `wmic ntevent` loads vbscript.dll. Sigma rule by Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 06ce37c2-61ab-4f05-9ff5-b1a96d18ae32. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_wmic_remote_xsl_scripting_dlls.yml
+    kind: bioc
+    severity: medium
+    category: image_load
+    mitre:
+      - T1220
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.source.process.executable.path ~= "\\\\wmic\\.exe$" and xdm.target.module.path ~= "(?:\\\\jscript\\.dll|\\\\vbscript\\.dll)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: load-of-rstrtmgr-dll-by-a-suspicious-p-b48492dc
+    name: Load Of RstrtMgr.DLL By A Suspicious Process
+    description: |-
+      Detects the load of RstrtMgr DLL (Restart Manager) by a suspicious process.
+      This library has been used during ransomware campaigns to kill processes that would prevent file encryption by locking them (e.g. Conti ransomware, Cactus ransomware). It has also recently been seen used by the BiBi wiper for Windows.
+      It could also be used for anti-analysis purposes by shut downing specific processes. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Processes related to software installation. Sigma rule by Luc Génaux, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b48492dc-c5ef-4572-8dff-32bc241c15c8. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_rstrtmgr_suspicious_load.yml
+    kind: bioc
+    severity: high
+    category: Impact
+    mitre:
+      - T1486
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and ((xdm.target.module.path ~= "\\\\RstrtMgr\\.dll$" or xdm.target.module.original_file_name ~= "^RstrtMgr\\.dll$") and (xdm.source.process.executable.path ~= "(?::\\\\Perflogs\\\\|:\\\\Users\\\\Public\\\\|\\\\Temporary Internet)" or ((xdm.source.process.executable.path ~= ":\\\\Users\\\\" and xdm.source.process.executable.path ~= "\\\\Favorites\\\\") or (xdm.source.process.executable.path ~= ":\\\\Users\\\\" and xdm.source.process.executable.path ~= "\\\\Favourites\\\\") or (xdm.source.process.executable.path ~= ":\\\\Users\\\\" and xdm.source.process.executable.path ~= "\\\\Contacts\\\\"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: load-of-rstrtmgr-dll-by-an-uncommon-pr-3669afd2
+    name: Load Of RstrtMgr.DLL By An Uncommon Process
+    description: |-
+      Detects the load of RstrtMgr DLL (Restart Manager) by an uncommon process.
+      This library has been used during ransomware campaigns to kill processes that would prevent file encryption by locking them (e.g. Conti ransomware, Cactus ransomware). It has also recently been seen used by the BiBi wiper for Windows.
+      It could also be used for anti-analysis purposes by shut downing specific processes. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Other legitimate Windows processes not currently listed; Processes related to software installation. Sigma rule by Luc Génaux, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3669afd2-9891-4534-a626-e5cf03810a61. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_rstrtmgr_uncommon_load.yml
+    kind: bioc
+    severity: low
+    category: Impact
+    mitre:
+      - T1486
+      - T1685
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and ((xdm.target.module.path ~= "\\\\RstrtMgr\\.dll$" or xdm.target.module.original_file_name ~= "^RstrtMgr\\.dll$") and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\\\$WINDOWS\\.~BT\\\\|C:\\\\\\$WinREAgent\\\\|C:\\\\Program Files \\(x86\\)\\\\|C:\\\\Program Files\\\\|C:\\\\ProgramData\\\\|C:\\\\Windows\\\\explorer\\.exe|C:\\\\Windows\\\\SoftwareDistribution\\\\|C:\\\\Windows\\\\SysNative\\\\|C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SysWOW64\\\\|C:\\\\Windows\\\\WinSxS\\\\|C:\\\\WUDownloadCache\\\\)" or (xdm.source.process.executable.path ~= "^C:\\\\Users\\\\" and (xdm.source.process.executable.path ~= "\\\\AppData\\\\Local\\\\Temp\\\\is-" and xdm.source.process.executable.path ~= "\\.tmp\\\\") and xdm.source.process.executable.path ~= "\\.tmp$") or xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\Temp\\\\")) and not (((xdm.source.process.executable.path ~= "^C:\\\\Users\\\\" and xdm.source.process.executable.path ~= "(?:\\\\AppData\\\\Local\\\\Microsoft\\\\OneDrive\\\\OneDrive\\.exe|\\\\AppData\\\\Local\\\\Microsoft\\\\OneDrive\\\\OneDriveStandaloneUpdater\\.exe)$") or (xdm.source.process.executable.path ~= "^C:\\\\Users\\\\" and xdm.source.process.executable.path contains "\\AppData\\Local\\Microsoft\\OneDrive\\" and xdm.source.process.executable.path ~= "\\\\OneDrive\\.Sync\\.Service\\.exe$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potentially-suspicious-volume-shadow-c-48bfd177
+    name: Potentially Suspicious Volume Shadow Copy Vsstrace.dll Load
+    description: "Detects the image load of VSS DLL by uncommon executables Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 48bfd177-7cf2-412b-ad77-baf923489e82. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_vsstrace_susp_load.yml"
+    kind: bioc
+    severity: medium
+    category: Impact
+    mitre:
+      - T1490
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\vsstrace\\.dll$" and not (((xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\explorer\\.exe|C:\\\\Windows\\\\ImmersiveControlPanel\\\\SystemSettings\\.exe|C:\\\\Windows\\\\servicing\\\\TrustedInstaller\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SysWOW64\\\\|C:\\\\Windows\\\\Temp\\\\\\{|C:\\\\Windows\\\\WinSxS\\\\|C:\\\\ProgramData\\\\Package Cache\\\\\\{)") or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\|C:\\\\Program Files \\(x86\\)\\\\)" or not (xdm.source.process.executable.path ~= "."))) and not ((xdm.source.process.executable.path ~= "^C:\\\\\\$WinREAgent\\\\Scratch\\\\" or (xdm.source.process.executable.path ~= "\\\\temp\\\\is-" and xdm.source.process.executable.path ~= "\\\\avira_system_speedup\\.tmp"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-volume-shadow-copy-vssapi-d-37774c23
+    name: Suspicious Volume Shadow Copy Vssapi.dll Load
+    description: "Detects the image load of VSS DLL by uncommon executables Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 37774c23-25a1-4adb-bb6d-8bb9fd59c0f8. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_vssapi_susp_load.yml"
+    kind: bioc
+    severity: high
+    category: Impact
+    mitre:
+      - T1490
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\vssapi\\.dll$" and not (((xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\explorer\\.exe|C:\\\\Windows\\\\ImmersiveControlPanel\\\\SystemSettings\\.exe|C:\\\\Windows\\\\servicing\\\\TrustedInstaller\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SysWOW64\\\\|C:\\\\Windows\\\\Temp\\\\\\{|C:\\\\Windows\\\\WinSxS\\\\|C:\\\\\\$WinREAgent\\\\Scratch\\\\)") or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\|C:\\\\Program Files \\(x86\\)\\\\)" or not (xdm.source.process.executable.path ~= "."))) and not ((xdm.source.process.executable.path ~= "^C:\\\\ProgramData\\\\Package Cache\\\\" or (xdm.source.process.executable.path ~= "\\\\temp\\\\is-" and xdm.source.process.executable.path ~= "\\\\avira_system_speedup\\.tmp"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: aruba-network-service-potential-dll-si-90ae0469
+    name: Aruba Network Service Potential DLL Sideloading
+    description: 'Detects potential DLL sideloading activity via the Aruba Networks Virtual Intranet Access "arubanetsvc.exe" process using DLL Search Order Hijacking Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 90ae0469-0cee-4509-b67f-e5efcef040f7. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_aruba_networks_virtual_intranet_access.yml'
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and ((xdm.source.process.executable.path ~= "\\\\arubanetsvc\\.exe$" and xdm.target.module.path ~= "(?:\\\\wtsapi32\\.dll|\\\\msvcr100\\.dll|\\\\msvcp100\\.dll|\\\\dbghelp\\.dll|\\\\dbgcore\\.dll|\\\\wininet\\.dll|\\\\iphlpapi\\.dll|\\\\version\\.dll|\\\\cryptsp\\.dll|\\\\cryptbase\\.dll|\\\\wldp\\.dll|\\\\profapi\\.dll|\\\\sspicli\\.dll|\\\\winsta\\.dll|\\\\dpapi\\.dll)$") and not (xdm.target.module.path ~= "^(?:C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SysWOW64\\\\|C:\\\\Windows\\\\WinSxS\\\\)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dll-sideloading-of-shellchromeapi-dll-ee4c5d06
+    name: DLL Sideloading Of ShellChromeAPI.DLL
+    description: |-
+      Detects processes loading the non-existent DLL "ShellChromeAPI". One known example is the "DeviceEnroller" binary in combination with the "PhoneDeepLink" flag tries to load this DLL.
+      Adversaries can drop their own renamed DLL and execute it via DeviceEnroller.exe using this parameter Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ee4c5d06-3abc-48cc-8885-77f1c20f4451. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_shell_chrome_api.yml
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and xdm.target.module.path ~= "\\\\ShellChromeAPI\\.dll$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: fax-service-dll-search-order-hijack-828af599
+    name: Fax Service DLL Search Order Hijack
+    description: "The Fax service attempts to load ualapi.dll, which is non-existent. An attacker can then (side)load their own malicious DLL using this service. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unlikely. Sigma rule by NVISO, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 828af599-4c53-4ed2-ba4a-a9f835c434ea. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_ualapi.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and ((xdm.source.process.executable.path ~= "\\\\fxssvc\\.exe$" and xdm.target.module.path ~= "ualapi\\.dll$") and not (xdm.target.module.path ~= "^C:\\\\Windows\\\\WinSxS\\\\"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: microsoft-office-application-loading-t-8d1e674c
+    name: Microsoft Office Application Loading Task Scheduler DLL
+    description: |-
+      Detects a Microsoft Office application loading taskschd.dll, which exposes COM interfaces for managing Windows Scheduled Tasks.
+      This load is an early precursor to scheduled task creation or modification and has been frequently observed in macro-enabled
+      malicious documents attempting to establish persistence. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Legitimate add-ins or automation scripts that use Office applications to manage scheduled tasks (rare in most environments). Sigma rule by Saksham Bhattarai, Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8d1e674c-5c03-4be1-949c-4b85a472dc16. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_office_taskschd_dll_load.yml
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1053.005
+      - T1204.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and ((xdm.target.module.path ~= "\\\\taskschd\\.dll$" or xdm.target.module.original_file_name ~= "^taskschd\\.dll$") and xdm.source.process.executable.path ~= "(?:\\\\eqnedt32\\.exe|\\\\excel\\.exe|\\\\fltldr\\.exe|\\\\graph\\.exe|\\\\msaccess\\.exe|\\\\mspub\\.exe|\\\\onenote\\.exe|\\\\onenoteim\\.exe|\\\\onenotem\\.exe|\\\\outlook\\.exe|\\\\powerpnt\\.exe|\\\\visio\\.exe|\\\\winproj\\.exe|\\\\winword\\.exe)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: microsoft-office-dll-sideload-829a3bdf
+    name: Microsoft Office DLL Sideload
+    description: "Detects DLL sideloading of DLLs that are part of Microsoft Office from non standard location Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), Wietze Beukema (project and research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 829a3bdf-34da-4051-9cf4-8ed221a8ae4f. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_office_dlls.yml"
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\outllib\\.dll$" and not (xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\Microsoft Office\\\\OFFICE|C:\\\\Program Files \\(x86\\)\\\\Microsoft Office\\\\OFFICE|C:\\\\Program Files\\\\Microsoft Office\\\\Root\\\\OFFICE|C:\\\\Program Files \\(x86\\)\\\\Microsoft Office\\\\Root\\\\OFFICE)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-7za-dll-sideloading-4f6edb78
+    name: Potential 7za.DLL Sideloading
+    description: 'Detects potential DLL sideloading of "7za.dll" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Legitimate third party application located in "AppData" may leverage this DLL to offer 7z compression functionality and may generate false positives. Apply additional filters as needed.. Sigma rule by X__Junior, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 4f6edb78-5c21-42ab-a558-fd2a6fc1fd57. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_7za.yml'
+    kind: bioc
+    severity: low
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\7za\\.dll$" and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\|C:\\\\Program Files\\\\)" and xdm.target.module.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\|C:\\\\Program Files\\\\)")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-antivirus-software-dll-sidel-552b6b65
+    name: Potential Antivirus Software DLL Sideloading
+    description: "Detects potential DLL sideloading of DLLs that are part of antivirus software such as McAfee, Symantec...etc Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Applications that load the same dlls mentioned in the detection section. Investigate them and filter them out if a lot FPs are caused.; Dell SARemediation plugin folder (C:\\Program Files\\Dell\\SARemediation\\plugin\\log.dll) is known to contain the 'log.dll' file.; The Canon MyPrinter folder 'C:\\Program Files\\Canon\\MyPrinter\\' is known to contain the 'log.dll' file. Sigma rule by Nasreddine Bencherchali (Nextron Systems), Wietze Beukema (project and research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 552b6b65-df37-4d3e-a258-f2fc4771ae54. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_antivirus.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and ((xdm.target.module.path ~= "\\\\log\\.dll$" and not ((xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\Bitdefender Antivirus Free\\\\|C:\\\\Program Files \\(x86\\)\\\\Bitdefender Antivirus Free\\\\)" or (xdm.source.process.executable.path ~= "^C:\\\\Program Files\\\\Dell\\\\SARemediation\\\\audit\\\\TelemetryUtility\\.exe$" and xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\Dell\\\\SARemediation\\\\plugin\\\\log\\.dll|C:\\\\Program Files\\\\Dell\\\\SARemediation\\\\audit\\\\log\\.dll)$") or xdm.target.module.path ~= "^C:\\\\Program Files\\\\Canon\\\\MyPrinter\\\\" or xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\AVAST Software\\\\Avast\\\\log\\.dll|C:\\\\Program Files \\(x86\\)\\\\AVAST Software\\\\Avast\\\\log\\.dll)$" or xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\AVG\\\\Antivirus\\\\log\\.dll|C:\\\\Program Files \\(x86\\)\\\\AVG\\\\Antivirus\\\\log\\.dll)$"))) or (xdm.target.module.path ~= "\\\\qrt\\.dll$" and not (xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\F-Secure\\\\Anti-Virus\\\\|C:\\\\Program Files \\(x86\\)\\\\F-Secure\\\\Anti-Virus\\\\)")) or (xdm.target.module.path ~= "(?:\\\\ashldres\\.dll|\\\\lockdown\\.dll|\\\\vsodscpl\\.dll)$" and not (xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\McAfee\\\\|C:\\\\Program Files \\(x86\\)\\\\McAfee\\\\)")) or (xdm.target.module.path ~= "\\\\vftrace\\.dll$" and not (xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\CyberArk\\\\Endpoint Privilege Manager\\\\Agent\\\\x32\\\\|C:\\\\Program Files \\(x86\\)\\\\CyberArk\\\\Endpoint Privilege Manager\\\\Agent\\\\x32\\\\)")) or (xdm.target.module.path ~= "\\\\wsc\\.dll$" and not ((xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\AVAST Software\\\\Avast\\\\|C:\\\\Program Files \\(x86\\)\\\\AVAST Software\\\\Avast\\\\)" or xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\AVG\\\\Antivirus\\\\|C:\\\\Program Files \\(x86\\)\\\\AVG\\\\Antivirus\\\\)"))) or (xdm.target.module.path ~= "\\\\tmdbglog\\.dll$" and not (xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\Trend Micro\\\\Titanium\\\\|C:\\\\Program Files \\(x86\\)\\\\Trend Micro\\\\Titanium\\\\)")) or (xdm.target.module.path ~= "\\\\DLPPREM32\\.dll$" and not (xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\ESET|C:\\\\Program Files \\(x86\\)\\\\ESET)")) or (xdm.target.module.path ~= "\\\\SystemStatus\\.dll$" and not (xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\Zillya Antivirus\\\\|C:\\\\Program Files \\(x86\\)\\\\Zillya Antivirus\\\\|C:\\\\Program Files\\\\Zillya Total Security\\\\|C:\\\\Program Files \\(x86\\)\\\\Zillya Total Security\\\\|C:\\\\Program Files\\\\Ovron Total Security\\\\|C:\\\\Program Files \\(x86\\)\\\\Ovron Total Security\\\\)")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-appverifui-dll-sideloading-ee6cea48
+    name: Potential appverifUI.DLL Sideloading
+    description: 'Detects potential DLL sideloading of "appverifUI.dll" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unlikely. Sigma rule by X__Junior (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ee6cea48-c5b6-4304-a332-10fc6446f484. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_appverifui.yml'
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\appverifUI\\.dll$" and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\SysWOW64\\\\appverif\\.exe|C:\\\\Windows\\\\System32\\\\appverif\\.exe)$" and xdm.target.module.path ~= "^(?:C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SysWOW64\\\\|C:\\\\Windows\\\\WinSxS\\\\)")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-avkkid-dll-sideloading-952ed57c
+    name: Potential AVKkid.DLL Sideloading
+    description: 'Detects potential DLL sideloading of "AVKkid.dll" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by X__Junior (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 952ed57c-8f99-453d-aee0-53a49c22f95d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_avkkid.yml'
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\AVKkid\\.dll$" and not ((xdm.source.process.executable.path ~= "(?:C:\\\\Program Files \\(x86\\)\\\\G DATA\\\\|C:\\\\Program Files\\\\G DATA\\\\)" and xdm.source.process.executable.path ~= "\\\\AVKKid\\.exe$" and xdm.target.module.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\G DATA\\\\|C:\\\\Program Files\\\\G DATA\\\\)")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-azure-browser-sso-abuse-50f852e6
+    name: Potential Azure Browser SSO Abuse
+    description: |-
+      Detects abusing Azure Browser SSO by requesting OAuth 2.0 refresh tokens for an Azure-AD-authenticated Windows user (i.e. the machine is joined to Azure AD and a user logs in with their Azure AD account) wanting to perform SSO authentication in the browser.
+      An attacker can use this to authenticate to Azure AD in a browser as that user. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: False positives are expected since this rules is only looking for the DLL load event. This rule is better used in correlation with related activity. Sigma rule by Den Iuzvyk, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 50f852e6-af22-4c78-9ede-42ef36aa3453. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_dll_azure_microsoft_account_token_provider_dll_load.yml
+    kind: bioc
+    severity: low
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "^C:\\\\Windows\\\\System32\\\\MicrosoftAccountTokenProvider\\.dll$" and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SysWOW64\\\\)" and xdm.source.process.executable.path ~= "\\\\BackgroundTaskHost\\.exe$")) and not (((xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Microsoft Visual Studio\\\\|C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\\\\)" and xdm.source.process.executable.path ~= "\\\\IDE\\\\devenv\\.exe$") or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Internet Explorer\\\\iexplore\\.exe|C:\\\\Program Files\\\\Internet Explorer\\\\iexplore\\.exe)$" or (xdm.source.process.executable.path ~= "^C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeWebView\\\\Application\\\\" or xdm.source.process.executable.path ~= "\\\\WindowsApps\\\\MicrosoftEdge\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe|C:\\\\Program Files\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe)$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeCore\\\\|C:\\\\Program Files\\\\Microsoft\\\\EdgeCore\\\\)" and xdm.source.process.executable.path ~= "(?:\\\\msedge\\.exe|\\\\msedgewebview2\\.exe)$") or xdm.source.process.executable.path ~= "\\\\AppData\\\\Local\\\\Microsoft\\\\OneDrive\\\\OneDrive\\.exe$" or not (xdm.source.process.executable.path ~= "."))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-ccleanerdu-dll-sideloading-1fbc0671
+    name: Potential CCleanerDU.DLL Sideloading
+    description: 'Detects potential DLL sideloading of "CCleanerDU.dll" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: False positives could occur from other custom installation paths. Apply additional filters accordingly.. Sigma rule by X__Junior (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 1fbc0671-5596-4e17-8682-f020a0b995dc. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_ccleaner_du.yml'
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\CCleanerDU\\.dll$" and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\CCleaner\\\\|C:\\\\Program Files \\(x86\\)\\\\CCleaner\\\\)" and xdm.source.process.executable.path ~= "(?:\\\\CCleaner\\.exe|\\\\CCleaner64\\.exe)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-ccleanerreactivator-dll-side-3735d5ac
+    name: Potential CCleanerReactivator.DLL Sideloading
+    description: 'Detects potential DLL sideloading of "CCleanerReactivator.dll" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: False positives could occur from other custom installation paths. Apply additional filters accordingly.. Sigma rule by X__Junior, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3735d5ac-d770-4da0-99ff-156b180bc600. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_ccleaner_reactivator.yml'
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\CCleanerReactivator\\.dll$" and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\CCleaner\\\\|C:\\\\Program Files \\(x86\\)\\\\CCleaner\\\\)" and xdm.source.process.executable.path ~= "\\\\CCleanerReactivator\\.exe$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-chrome-frame-helper-dll-side-72ca7c75
+    name: Potential Chrome Frame Helper DLL Sideloading
+    description: 'Detects potential DLL sideloading of "chrome_frame_helper.dll" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), Wietze Beukema (project and research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 72ca7c75-bf85-45cd-aca7-255d360e423c. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_chrome_frame_helper.yml'
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\chrome_frame_helper\\.dll$" and not (xdm.target.module.path ~= "^(?:C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\|C:\\\\Program Files \\(x86\\)\\\\Google\\\\Chrome\\\\Application\\\\)") and not (xdm.target.module.path contains "\\AppData\\local\\Google\\Chrome\\Application\\"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-dll-sideloading-of-dbgcore-d-9ca2bf31
+    name: Potential DLL Sideloading Of DBGCORE.DLL
+    description: 'Detects DLL sideloading of "dbgcore.dll" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Legitimate applications loading their own versions of the DLL mentioned in this rule. Sigma rule by Nasreddine Bencherchali (Nextron Systems), Wietze Beukema (project and research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9ca2bf31-0570-44d8-a543-534c47c33ed7. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_dbgcore.yml'
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\dbgcore\\.dll$" and not (xdm.target.module.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\|C:\\\\Program Files\\\\|C:\\\\Windows\\\\SoftwareDistribution\\\\|C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SystemTemp\\\\|C:\\\\Windows\\\\SysWOW64\\\\|C:\\\\Windows\\\\WinSxS\\\\)") and not ((xdm.target.module.path ~= "\\\\Steam\\\\bin\\\\cef\\\\cef\\.win7x64\\\\dbgcore\\.dll$" or (xdm.target.module.path contains "opera\\Opera Installer Temp\\opera_package" and xdm.target.module.path ~= "\\\\assistant\\\\dbgcore\\.dll$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-dll-sideloading-of-dbghelp-d-6414b5cd
+    name: Potential DLL Sideloading Of DBGHELP.DLL
+    description: 'Detects potential DLL sideloading of "dbghelp.dll" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 7). Known false positives: Legitimate applications loading their own versions of the DLL mentioned in this rule. Sigma rule by Nasreddine Bencherchali (Nextron Systems), Wietze Beukema (project and research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 6414b5cd-b19d-447e-bb5e-9f03940b5784. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/image_load/image_load_side_load_dbghelp.yml'
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1574.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "image_load" and (xdm.target.module.path ~= "\\\\dbghelp\\.dll$" and not (xdm.target.module.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\|C:\\\\Program Files\\\\|C:\\\\Windows\\\\SoftwareDistribution\\\\|C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SystemTemp\\\\|C:\\\\Windows\\\\SysWOW64\\\\|C:\\\\Windows\\\\WinSxS\\\\)") and not ((xdm.target.module.path ~= "(?:\\\\Anaconda3\\\\Lib\\\\site-packages\\\\vtrace\\\\platforms\\\\windll\\\\amd64\\\\dbghelp\\.dll|\\\\Anaconda3\\\\Lib\\\\site-packages\\\\vtrace\\\\platforms\\\\windll\\\\i386\\\\dbghelp\\.dll)$" or xdm.target.module.path ~= "(?:\\\\Epic Games\\\\Launcher\\\\Engine\\\\Binaries\\\\ThirdParty\\\\DbgHelp\\\\dbghelp\\.dll|\\\\Epic Games\\\\MagicLegends\\\\x86\\\\dbghelp\\.dll)$" or (xdm.target.module.path contains "opera\\Opera Installer Temp\\opera_package" and xdm.target.module.path ~= "\\\\assistant\\\\dbghelp\\.dll$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 2026.1118.0
+    released: 2026-11-18
+    notes: Converted from the SigmaHQ rules at 698f0912f571d5fac3bf8c51f5421139834a011c.

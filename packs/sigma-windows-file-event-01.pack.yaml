@@ -1,0 +1,1120 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: sigma-windows-file-event-01
+name: "Sigma: Windows file event (1 of 4)"
+description: "50 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows file event events, grouped by tactic, starting with Collection. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires."
+version: 2026.1118.0
+audience: enterprise
+publisher:
+  name: SigmaHQ community, converted for ASIX
+  url: https://github.com/SigmaHQ/sigma
+certification: community
+supported_by: community
+rules_start_off: true
+tags:
+  - sigma
+  - windows
+  - file-event
+license: DRL-1.1
+sources:
+  - Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11)
+rules:
+  - key: uncommon-file-created-by-notepad-updat-3b8f4c92
+    name: Uncommon File Created by Notepad++ Updater Gup.EXE
+    description: |-
+      Detects when the Notepad++ updater (gup.exe) creates files in suspicious or uncommon locations.
+      This could indicate potential exploitation of the updater component to deliver unwanted malware or unwarranted files. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Custom or portable Notepad++ installations in non-standard directories.; Legitimate update processes creating temporary files in unexpected locations.. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3b8f4c92-6a51-4d7e-9c3a-8e2d1f5a7b09. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_gup_uncommon_file_creation.yml
+    kind: bioc
+    severity: high
+    category: Collection
+    mitre:
+      - T1195.002
+      - T1557
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path ~= "\\\\gup\\.exe$" and not ((xdm.target.file.path ~= "^(?:C:\\\\Program Files\\\\Notepad\\+\\+\\\\|C:\\\\Program Files \\(x86\\)\\\\Notepad\\+\\+\\\\)" or (xdm.target.file.path ~= "^C:\\\\Users\\\\" and (xdm.target.file.path ~= "\\\\AppData\\\\Local\\\\Temp\\\\" and xdm.target.file.path ~= "npp\\." and xdm.target.file.path ~= "\\.Installer\\." and xdm.target.file.path ~= "\\.exe")) or (xdm.target.file.path ~= "^C:\\\\Users\\\\" and (xdm.target.file.path ~= "\\\\AppData\\\\Local\\\\Temp\\\\" and xdm.target.file.path ~= "\\.zip")) or xdm.target.file.path ~= "^C:\\\\\\$Recycle\\.Bin\\\\S-1-5-21" or (xdm.target.file.path ~= "(?:\\\\plugins\\\\JsonTools\\\\testfiles\\\\|\\\\Notepad\\+\\+\\\\plugins\\\\ComparePlugin\\\\)" or (xdm.target.file.path ~= "npp\\." and xdm.target.file.path ~= "\\.portable\\." and xdm.target.file.path ~= "\\\\plugins\\\\")))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: adexplorer-writing-complete-ad-snapsho-0a1255c5
+    name: ADExplorer Writing Complete AD Snapshot Into .dat File
+    description: "Detects the dual use tool ADExplorer writing a complete AD snapshot into a .dat file. This can be used by attackers to extract data for Bloodhound, usernames for password spraying or use the meta data for social engineering. The snapshot doesn't contain password hashes but there have been cases, where administrators put passwords in the comment field. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate use of ADExplorer by administrators creating .dat snapshots. Sigma rule by Arnim Rupp (Nextron Systems), Thomas Patzke, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0a1255c5-d732-4b62-ac02-b5152d34fb83. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_sysinternals_adexplorer_dump_written.yml"
+    kind: bioc
+    severity: medium
+    category: Discovery
+    mitre:
+      - T1087.002
+      - T1069.002
+      - T1482
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path ~= "(?:\\\\ADExp\\.exe|\\\\ADExplorer\\.exe|\\\\ADExplorer64\\.exe|\\\\ADExplorer64a\\.exe)$" and xdm.target.file.path ~= "\\.dat$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: advanced-ip-scanner-file-event-fed85bf9
+    name: Advanced IP Scanner - File Event
+    description: "Detects the use of Advanced IP Scanner. Seems to be a popular tool for ransomware groups. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate administrative use. Sigma rule by @ROxPinTeddy, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id fed85bf9-e075-4280-9159-fbe8a023d6fa. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_advanced_ip_scanner.yml"
+    kind: bioc
+    severity: medium
+    category: Discovery
+    mitre:
+      - T1046
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path contains "\\AppData\\Local\\Temp\\Advanced IP Scanner 2"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: bloodhound-collection-files-02773bed
+    name: BloodHound Collection Files
+    description: "Detects default file names outputted by the BloodHound collection tool SharpHound Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Some false positives may arise in some environment and this may require some tuning. Add additional filters or reduce level depending on the level of noise. Sigma rule by C.J. May, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 02773bed-83bf-469f-b7ff-e676e7d78bab. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_bloodhound_collection.yml"
+    kind: bioc
+    severity: high
+    category: Discovery
+    mitre:
+      - T1087.001
+      - T1087.002
+      - T1482
+      - T1069.001
+      - T1069.002
+      - T1059.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "(?:BloodHound\\.zip|_computers\\.json|_containers\\.json|_gpos\\.json|_groups\\.json|_ous\\.json|_users\\.json)$" and not ((xdm.source.process.executable.path ~= "\\\\svchost\\.exe$" and xdm.target.file.path ~= "^C:\\\\Program Files\\\\WindowsApps\\\\Microsoft\\." and xdm.target.file.path ~= "\\\\pocket_containers\\.json$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: gathernetworkinfo-vbs-reconnaissance-s-f92a6f1e
+    name: GatherNetworkInfo.VBS Reconnaissance Script Output
+    description: 'Detects creation of files which are the results of executing the built-in reconnaissance script "C:\Windows\System32\gatherNetworkInfo.vbs". Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f92a6f1e-a512-4a15-9735-da09e78d7273. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_lolbin_gather_network_info_script_output.yml'
+    kind: bioc
+    severity: medium
+    category: Discovery
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "^C:\\\\Windows\\\\System32\\\\config" and xdm.target.file.path ~= "(?:\\\\Hotfixinfo\\.txt|\\\\netiostate\\.txt|\\\\sysportslog\\.txt|\\\\VmSwitchLog\\.evtx)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: adwind-rat-jrat-file-artifact-0bcfabcb
+    name: Adwind RAT / JRAT File Artifact
+    description: "Detects javaw.exe in AppData folder as used by Adwind / JRAT Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Sigma rule by Florian Roth (Nextron Systems), Tom Ueltschi, Jonhnathan Ribeiro, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0bcfabcb-7929-47f4-93d6-b33fb67d34d1. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_mal_adwind.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1059.005
+      - T1059.007
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and ((xdm.target.file.path ~= "\\\\AppData\\\\Roaming\\\\Oracle\\\\bin\\\\java" and xdm.target.file.path ~= "\\.exe") or (xdm.target.file.path ~= "\\\\Retrive" and xdm.target.file.path ~= "\\.vbs"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: assembly-dll-creation-via-aspnetcompil-4c7f49ee
+    name: Assembly DLL Creation Via AspNetCompiler
+    description: 'Detects the creation of new DLL assembly files by "aspnet_compiler.exe", which could be a sign of "aspnet_compiler" abuse to proxy execution through a build provider. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate assembly compilation using a build provider. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 4c7f49ee-2638-43bb-b85b-ce676c30b260. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_aspnet_temp_files.yml'
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path ~= "\\\\aspnet_compiler\\.exe$" and (xdm.target.file.path ~= "\\\\Temporary ASP\\.NET Files\\\\" and xdm.target.file.path ~= "\\\\assembly\\\\tmp\\\\" and xdm.target.file.path ~= "\\.dll"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: created-files-by-microsoft-sync-center-409f8a98
+    name: Created Files by Microsoft Sync Center
+    description: "This rule detects suspicious files created by Microsoft Sync Center (mobsync) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by elhoim, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 409f8a98-4496-4aaa-818a-c931c0a8b832. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_creation_by_mobsync.yml"
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1055
+      - T1218
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path ~= "\\\\mobsync\\.exe$" and xdm.target.file.path ~= "(?:\\.dll|\\.exe)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: csexec-service-file-creation-f0e2b768
+    name: CSExec Service File Creation
+    description: "Detects default CSExec service filename which indicates CSExec service installation and execution Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id f0e2b768-5220-47dd-b891-d57b96fc0ec1. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_csexec_service.yml"
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1569.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "\\\\csexecsvc\\.exe$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: file-with-uncommon-extension-created-b-c7a74c80
+    name: File With Uncommon Extension Created By An Office Application
+    description: "Detects the creation of files with an executable or script extension by an Office application. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Vadim Khrykov (ThreatIntel), Cyb3rEng (Rule), Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c7a74c80-ba5a-486e-9974-ab9e682bc5e4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_office_susp_file_extension.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1204.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and ((xdm.source.process.executable.path ~= "(?:\\\\excel\\.exe|\\\\msaccess\\.exe|\\\\mspub\\.exe|\\\\powerpnt\\.exe|\\\\visio\\.exe|\\\\winword\\.exe)$" and xdm.target.file.path ~= "(?:\\.bat|\\.cmd|\\.com|\\.dll|\\.exe|\\.hta|\\.ocx|\\.proj|\\.ps1|\\.scf|\\.scr|\\.sys|\\.vbe|\\.vbs|\\.wsf|\\.wsh)$") and not ((xdm.target.file.path contains "\\AppData\\Local\\assembly\\tmp\\" and xdm.target.file.path ~= "\\.dll$")) and not ((((xdm.target.file.path ~= "C:\\\\Users\\\\" and xdm.target.file.path ~= "\\\\AppData\\\\Local\\\\Microsoft\\\\Office\\\\" and xdm.target.file.path ~= "\\\\WebServiceCache\\\\AllUsers") and xdm.target.file.path ~= "\\.com$") or (xdm.source.process.executable.path ~= "\\\\winword\\.exe$" and xdm.target.file.path contains "\\AppData\\Local\\Temp\\webexdelta\\" and xdm.target.file.path ~= "(?:\\.dll|\\.exe)$") or ((xdm.target.file.path ~= "C:\\\\Users\\\\" and xdm.target.file.path ~= "\\\\AppData\\\\Local\\\\Microsoft\\\\Office\\\\" and xdm.target.file.path ~= "\\\\BackstageInAppNavCache\\\\") and xdm.target.file.path ~= "\\.com$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-netexec-file-indicators-efc21479
+    name: HackTool - NetExec File Indicators
+    description: |-
+      Detects file creation events indicating NetExec (nxc.exe) execution on the local machine.
+      NetExec is a PyInstaller-bundled binary that extracts its embedded data files to a "_MEI<random>" directory
+      under the Temp folder upon execution. Files dropped under the "\nxc\" sub-directory of that
+      extraction path are unique to NetExec and serve as reliable on-disk indicators of execution.
+      NetExec (formerly CrackMapExec) is a widely used post-exploitation and lateral movement tool used for
+      Active Directory enumeration, credential harvesting, and remote code execution. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id efc21479-9e83-41da-8cf1-122e06ba8db3. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_hktl_netexec_file_indicators.yml
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1021.002
+      - T1059.005
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path contains "\\nxc-windows-latest\\" or (xdm.target.file.path ~= "\\\\Temp\\\\_MEI" and xdm.target.file.path ~= "\\\\nxc\\\\data\\\\"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: pcre-net-package-temp-files-6e90ae7a
+    name: PCRE.NET Package Temp Files
+    description: "Detects processes creating temp files related to PCRE.NET package Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 6e90ae7a-7cd3-473f-a035-4ebb72d961da. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_pcre_net_temp_file.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1059
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path contains "\\AppData\\Local\\Temp\\ba9ea7344a4a5f591d6e5dc32a13494b\\"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potential-file-extension-spoofing-usin-979baf41
+    name: Potential File Extension Spoofing Using Right-to-Left Override
+    description: "Detects suspicious filenames that contain a right-to-left override character and a potentially spoofed file extensions. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Filenames that contains scriptures such as arabic or hebrew might make use of this character. Sigma rule by Jonathan Peters (Nextron Systems), Florian Roth (Nextron Systems), Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 979baf41-ca44-4540-9d0c-4fcef3b5a3a4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_right_to_left_override_extension_spoofing.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1036.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "(?:\\\\u202e|\\[U\\+202E\\]|‮)" and xdm.target.file.path ~= "(?:3pm\\.|4pm\\.|cod\\.|fdp\\.|ftr\\.|gepj\\.|gnp\\.|gpj\\.|ism\\.|lmth\\.|nls\\.|piz\\.|slx\\.|tdo\\.|vsc\\.|vwm\\.|xcod\\.|xslx\\.|xtpp\\.)")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: psexec-remote-execution-file-artefact-304afd73
+    name: PSEXEC Remote Execution File Artefact
+    description: "Detects creation of the PSEXEC key file. Which is created anytime a PsExec command is executed. It gets written to the file system and will be recorded in the USN Journal on the target system Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 304afd73-55a5-4bb9-8c21-0b1fc84ea9e4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_sysinternals_psexec_service_key.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1136.002
+      - T1543.003
+      - T1570
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "^C:\\\\Windows\\\\PSEXEC-" and xdm.target.file.path ~= "\\.key$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: psexec-service-file-creation-259e5a6a
+    name: PsExec Service File Creation
+    description: "Detects default PsExec service filename which indicates PsExec service installation and execution Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Thomas Patzke, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 259e5a6a-b8d2-4c38-86e2-26c5e651361d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_sysinternals_psexec_service.yml"
+    kind: bioc
+    severity: low
+    category: Execution
+    mitre:
+      - T1569.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "\\\\PSEXESVC\\.exe$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: remcom-service-file-creation-7eff1a7f
+    name: RemCom Service File Creation
+    description: "Detects default RemCom service filename which indicates RemCom service installation and execution Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7eff1a7f-dd45-4c20-877a-f21e342a7611. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_remcom_service.yml"
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1569.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "\\\\RemComSvc\\.exe$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: remote-access-tool-screenconnect-tempo-0afecb6e
+    name: Remote Access Tool - ScreenConnect Temporary File
+    description: |-
+      Detects the creation of files in a specific location by ScreenConnect RMM.
+      ScreenConnect has feature to remotely execute binaries on a target machine. These binaries will be dropped to ":\Users\<username>\Documents\ConnectWiseControl\Temp\" before execution. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate use of ScreenConnect. Sigma rule by Ali Alwashali, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0afecb6e-6223-4a82-99fb-bf5b981e92a5. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_remote_access_tools_screenconnect_remote_file.yml
+    kind: bioc
+    severity: low
+    category: Execution
+    mitre:
+      - T1059.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path ~= "\\\\ScreenConnect\\.WindowsClient\\.exe$" and xdm.target.file.path contains "\\Documents\\ConnectWiseControl\\Temp\\")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-binaries-and-scripts-in-pub-b447f7de
+    name: Suspicious Binaries and Scripts in Public Folder
+    description: "Detects the creation of a file with a suspicious extension in the public folder, which could indicate potential malicious activity. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Administrators deploying legitimate binaries to public folders.. Sigma rule by The DFIR Report, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b447f7de-1e53-4cbf-bfb4-f1f6d0b04e4e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_public_folder_extension.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1204
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path contains ":\\Users\\Public\\" and xdm.target.file.path ~= "(?:\\.bat|\\.dll|\\.exe|\\.hta|\\.js|\\.ps1|\\.vbe|\\.vbs)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-deno-file-written-from-remo-6c0ce3b6
+    name: Suspicious Deno File Written from Remote Source
+    description: |-
+      Detects Deno writing a file from a direct HTTP(s) call and writing to the appdata folder or bringing it's own malicious DLL.
+      This behavior may indicate an attempt to execute remotely hosted, potentially malicious files through deno. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate usage of deno to request a file or bring a DLL to a host. Sigma rule by Josh Nickels, Michael Taggart, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 6c0ce3b6-85e2-49d4-9c3f-6e008ce9796e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_creation_deno.yml
+    kind: bioc
+    severity: low
+    category: Execution
+    mitre:
+      - T1204
+      - T1059.007
+      - T1105
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "(?:\\\\deno\\\\gen\\\\|\\\\deno\\\\remote\\\\https\\\\)" and (xdm.target.file.path ~= ":\\\\Users\\\\" and xdm.target.file.path ~= "\\\\AppData\\\\"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-file-created-in-perflogs-bbb7e38c
+    name: Suspicious File Created In PerfLogs
+    description: 'Detects suspicious file based on their extension being created in "C:\PerfLogs\". Note that this directory mostly contains ".etl" files Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id bbb7e38c-0b41-4a11-b306-d2a457b7ac2b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_perflogs_susp_files.yml'
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1059
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "^C:\\\\PerfLogs\\\\" and xdm.target.file.path ~= "(?:\\.7z|\\.bat|\\.bin|\\.chm|\\.dll|\\.exe|\\.hta|\\.lnk|\\.ps1|\\.psm1|\\.py|\\.scr|\\.sys|\\.vbe|\\.vbs|\\.zip)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-file-creation-in-uncommon-a-d7b50671
+    name: Suspicious File Creation In Uncommon AppData Folder
+    description: "Detects the creation of suspicious files and folders inside the user's AppData folder but not inside any of the common and well known directories (Local, Romaing, LocalLow). This method could be used as a method to bypass detection who exclude the AppData folder in fear of FPs Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id d7b50671-d1ad-4871-aa60-5aa5b331fe04. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_new_files_in_uncommon_appdata_folder.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and ((xdm.target.file.path ~= "^C:\\\\Users\\\\" and xdm.target.file.path contains "\\AppData\\" and xdm.target.file.path ~= "(?:\\.bat|\\.cmd|\\.cpl|\\.dll|\\.exe|\\.hta|\\.iso|\\.lnk|\\.msi|\\.ps1|\\.psm1|\\.scr|\\.vbe|\\.vbs)$") and not ((xdm.target.file.path ~= "^C:\\\\Users\\\\" and xdm.target.file.path ~= "(?:\\\\AppData\\\\Local\\\\|\\\\AppData\\\\LocalLow\\\\|\\\\AppData\\\\Roaming\\\\)")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-interactive-powershell-as-s-5b40a734
+    name: Suspicious Interactive PowerShell as SYSTEM
+    description: "Detects the creation of files that indicator an interactive use of PowerShell in the SYSTEM user context Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Administrative activity; PowerShell scripts running as SYSTEM user. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 5b40a734-99b6-4b98-a1d0-1cea51a08ab2. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_system_interactive_powershell.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1059.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "^(?:C:\\\\Windows\\\\System32\\\\config\\\\systemprofile\\\\AppData\\\\Roaming\\\\Microsoft\\\\Windows\\\\PowerShell\\\\PSReadLine\\\\ConsoleHost_history\\.txt|C:\\\\Windows\\\\System32\\\\config\\\\systemprofile\\\\AppData\\\\Local\\\\Microsoft\\\\Windows\\\\PowerShell\\\\StartupProfileData-Interactive)$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-startup-folder-persistence-28208707
+    name: Suspicious Startup Folder Persistence
+    description: |-
+      Detects the creation of potentially malicious script and executable files in Windows startup folders, which is a common persistence technique used by threat actors.
+      These files (.ps1, .vbs, .js, .bat, etc.) are automatically executed when a user logs in, making the Startup folder an attractive target for attackers.
+      This technique is frequently observed in malvertising campaigns and malware distribution where attackers attempt to maintain long-term access to compromised systems. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Rare legitimate usage of some of the extensions mentioned in the rule. Sigma rule by Nasreddine Bencherchali (Nextron Systems), Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 28208707-fe31-437f-9a7f-4b1108b94d2e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_startup_folder_persistence.yml
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1204.002
+      - T1547.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path contains "\\Windows\\Start Menu\\Programs\\Startup\\" and xdm.target.file.path ~= "(?:\\.bat|\\.cmd|\\.dll|\\.hta|\\.jar|\\.js|\\.jse|\\.msi|\\.ps1|\\.psd1|\\.psm1|\\.scr|\\.url|\\.vba|\\.vbe|\\.vbs|\\.wsf)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: uac-bypass-using-idiagnostic-profile-f-48ea844d
+    name: UAC Bypass Using IDiagnostic Profile - File
+    description: 'Detects the creation of a file by "dllhost.exe" in System32 directory part of "IDiagnosticProfileUAC" UAC bypass technique Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 48ea844d-19b1-4642-944e-fe39c2cc1fec. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_uac_bypass_idiagnostic_profile.yml'
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1548.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path ~= "\\\\DllHost\\.exe$" and xdm.target.file.path ~= "^C:\\\\Windows\\\\System32\\\\" and xdm.target.file.path ~= "\\.dll$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: windows-shell-scripting-application-fi-1277f594
+    name: Windows Shell/Scripting Application File Write to Suspicious Folder
+    description: "Detects Windows shells and scripting applications that write files to suspicious folders Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 1277f594-a7d1-4f28-a2d3-73af5cbeab43. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_shell_write_susp_directory.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1059
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and ((xdm.source.process.executable.path ~= "(?:\\\\bash\\.exe|\\\\cmd\\.exe|\\\\cscript\\.exe|\\\\msbuild\\.exe|\\\\powershell\\.exe|\\\\pwsh\\.exe|\\\\sh\\.exe|\\\\wscript\\.exe)$" and xdm.target.file.path ~= "^(?:C:\\\\PerfLogs\\\\|C:\\\\Users\\\\Public\\\\)") or (xdm.source.process.executable.path ~= "(?:\\\\certutil\\.exe|\\\\forfiles\\.exe|\\\\mshta\\.exe|\\\\schtasks\\.exe|\\\\scriptrunner\\.exe|\\\\wmic\\.exe)$" and xdm.target.file.path ~= "(?:C:\\\\PerfLogs\\\\|C:\\\\Users\\\\Public\\\\|C:\\\\Windows\\\\Temp\\\\)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: winsxs-executable-file-creation-by-non-34746e8c
+    name: WinSxS Executable File Creation By Non-System Process
+    description: "Detects the creation of binaries in the WinSxS folder by non-system processes Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 34746e8c-5fb8-415a-b135-0abc167e912a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_winsxs_binary_creation.yml"
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and ((xdm.target.file.path ~= "^C:\\\\Windows\\\\WinSxS\\\\" and xdm.target.file.path ~= "\\.exe$") and not (xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\Systems32\\\\|C:\\\\Windows\\\\SysWOW64\\\\|C:\\\\Windows\\\\WinSxS\\\\)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: wmiexec-default-output-file-8d5aca11
+    name: Wmiexec Default Output File
+    description: "Detects the creation of the default output filename used by the wmiexec tool Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unlikely. Regular expressions here ignore case in ASIX; in Sigma they are case-sensitive unless |i is given, so this rule can match a little more. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8d5aca11-22b3-4f22-b7ba-90e60533e1fb. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_wmiexec_default_filename.yml"
+    kind: bioc
+    severity: critical
+    category: Execution
+    mitre:
+      - T1047
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "\\\\Windows\\\\__1\\d{9}\\.\\d{1,7}$" or xdm.target.file.path ~= "C:\\\\__1\\d{9}\\.\\d{1,7}$" or xdm.target.file.path ~= "D:\\\\__1\\d{9}\\.\\d{1,7}$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: wmiprvse-wbemcomn-dll-hijack-file-614a7e17
+    name: Wmiprvse Wbemcomn DLL Hijack - File
+    description: "Detects a threat actor creating a file named `wbemcomn.dll` in the `C:\\Windows\\System32\\wbem\\` directory over the network and loading it for a WMI DLL Hijack scenario. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Roberto Rodriguez (Cyb3rWard0g), OTR (Open Threat Research), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 614a7e17-5643-4d89-b6fe-f9df1a79641c. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_wmiprvse_wbemcomn_dll_hijack.yml"
+    kind: bioc
+    severity: critical
+    category: Execution
+    mitre:
+      - T1047
+      - T1021.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path ~= "^System$" and xdm.target.file.path ~= "\\\\wbem\\\\wbemcomn\\.dll$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: wscript-or-cscript-dropper-file-002bdb95
+    name: WScript or CScript Dropper - File
+    description: "Detects a file ending in jse, vbe, js, vba, vbs, wsf, wsh written by cscript.exe or wscript.exe Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Tim Shelton, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 002bdb95-0cf1-46a6-9e08-d38c128a6127. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_cscript_wscript_dropper.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1059.005
+      - T1059.007
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path ~= "(?:\\\\wscript\\.exe|\\\\cscript\\.exe)$" and xdm.target.file.path ~= "(?::\\\\Perflogs\\\\|:\\\\ProgramData\\\\|:\\\\Temp\\\\|:\\\\Tmp\\\\|:\\\\Users\\\\|:\\\\Windows\\\\Temp\\\\|\\\\AppData\\\\Local\\\\Temp|\\\\AppData\\\\Roaming\\\\Temp|\\\\Start Menu\\\\Programs\\\\Startup\\\\|\\\\Temporary Internet)" and xdm.target.file.path ~= "(?:\\.js|\\.jse|\\.vba|\\.vbe|\\.vbs|\\.wsf|\\.wsh)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: rclone-config-file-creation-34986307
+    name: Rclone Config File Creation
+    description: "Detects Rclone config files being created Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate Rclone usage. Sigma rule by Aaron Greetham (@beardofbinary) - NCC Group, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 34986307-b7f4-49be-92f3-e7a4d01ac5db. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_rclone_config_files.yml"
+    kind: bioc
+    severity: medium
+    category: Exfiltration
+    mitre:
+      - T1567.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= ":\\\\Users\\\\" and xdm.target.file.path ~= "\\\\\\.config\\\\rclone\\\\")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: rdp-file-created-by-uncommon-applicati-fccfb43e
+    name: .RDP File Created By Uncommon Application
+    description: "Detects creation of a file with an \".rdp\" extension by an application that doesn't commonly create such files. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id fccfb43e-09a7-4bd2-8b37-a5a7df33386d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_rdp_file_susp_creation.yml"
+    kind: bioc
+    severity: high
+    category: file_event
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "\\.rdp$" and xdm.source.process.executable.path ~= "(?:\\\\brave\\.exe|\\\\CCleaner Browser\\\\Application\\\\CCleanerBrowser\\.exe|\\\\chromium\\.exe|\\\\firefox\\.exe|\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe|\\\\iexplore\\.exe|\\\\microsoftedge\\.exe|\\\\msedge\\.exe|\\\\Opera\\.exe|\\\\Vivaldi\\.exe|\\\\Whale\\.exe|\\\\olk\\.exe|\\\\Outlook\\.exe|\\\\RuntimeBroker\\.exe|\\\\Thunderbird\\.exe|\\\\Discord\\.exe|\\\\Keybase\\.exe|\\\\msteams\\.exe|\\\\Slack\\.exe|\\\\teams\\.exe)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: adsi-cache-file-creation-by-uncommon-t-75bf09fa
+    name: ADSI-Cache File Creation By Uncommon Tool
+    description: 'Detects the creation of an "Active Directory Schema Cache File" (.sch) file by an uncommon tool. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Other legimate tools, which do ADSI (LDAP) operations, e.g. any remoting activity by MMC, Powershell, Windows etc.. Sigma rule by xknow @xknow_infosec, Tim Shelton, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 75bf09fa-1dd7-4d18-9af9-dd9e492562eb. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_adsi_cache_creation_by_uncommon_tool.yml'
+    kind: bioc
+    severity: medium
+    category: file_event
+    mitre:
+      - T1001.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and ((xdm.target.file.path contains "\\Local\\Microsoft\\Windows\\SchCache\\" and xdm.target.file.path ~= "\\.sch$") and not (((xdm.source.process.executable.path ~= "(?::\\\\Program Files\\\\Cylance\\\\Desktop\\\\CylanceSvc\\.exe|:\\\\Windows\\\\CCM\\\\CcmExec\\.exe|:\\\\windows\\\\system32\\\\dllhost\\.exe|:\\\\Windows\\\\system32\\\\dsac\\.exe|:\\\\Windows\\\\system32\\\\efsui\\.exe|:\\\\windows\\\\system32\\\\mmc\\.exe|:\\\\windows\\\\system32\\\\svchost\\.exe|:\\\\Windows\\\\System32\\\\wbem\\\\WmiPrvSE\\.exe|:\\\\windows\\\\system32\\\\WindowsPowerShell\\\\v1\\.0\\\\powershell\\.exe)$" or xdm.source.process.executable.path ~= "(?::\\\\Windows\\\\ccmsetup\\\\autoupgrade\\\\ccmsetup|:\\\\Program Files\\\\SentinelOne\\\\Sentinel Agent)") or ((xdm.source.process.executable.path ~= ":\\\\Program Files\\\\" and xdm.source.process.executable.path ~= "\\\\Microsoft Office") and xdm.source.process.executable.path ~= "\\\\OUTLOOK\\.EXE$"))) and not ((xdm.source.process.executable.path ~= "\\\\LANDesk\\\\LDCLient\\\\ldapwhoami\\.exe$" or xdm.source.process.executable.path ~= ":\\\\Program Files\\\\Citrix\\\\Receiver StoreFront\\\\Services\\\\DefaultDomainServices\\\\Citrix\\.DeliveryServices\\.DomainServices\\.ServiceHost\\.exe$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: anydesk-temporary-artefact-0b9ad457
+    name: Anydesk Temporary Artefact
+    description: |-
+      An adversary may use legitimate desktop support and remote access software, such as Team Viewer, Go2Assist, LogMein, AmmyyAdmin, etc, to establish an interactive command and control channel to target systems within networks.
+      These services are commonly used as legitimate technical support software, and may be allowed by application control within a target environment.
+      Remote access tools like VNC, Ammyy, and Teamviewer are used frequently when compared with other legitimate software commonly used by adversaries. (Citation: Symantec Living off the Land) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate use. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0b9ad457-2554-44c1-82c2-d56a99c42377. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_anydesk_artefact.yml
+    kind: bioc
+    severity: medium
+    category: file_event
+    mitre:
+      - T1219.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "(?:\\\\AppData\\\\Roaming\\\\AnyDesk\\\\user\\.conf|\\\\AppData\\\\Roaming\\\\AnyDesk\\\\system\\.conf)"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: awl-bypass-with-winrm-vbs-and-maliciou-d353dac0
+    name: AWL Bypass with Winrm.vbs and Malicious WsmPty.xsl/WsmTxt.xsl - File
+    description: "Detects execution of attacker-controlled WsmPty.xsl or WsmTxt.xsl via winrm.vbs and copied cscript.exe (can be renamed) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unlikely. Sigma rule by Julia Fomina, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id d353dac0-1b41-46c2-820c-d7d2561fc6ed. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_winrm_awl_bypass.yml"
+    kind: bioc
+    severity: medium
+    category: file_event
+    mitre:
+      - T1216
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "(?:WsmPty\\.xsl|WsmTxt\\.xsl)$" and not (xdm.target.file.path ~= "^(?:C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SysWOW64\\\\)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: creation-of-a-diagcab-3d0ed417
+    name: Creation of a Diagcab
+    description: "Detects the creation of diagcab file, which could be caused by some legitimate installer or is a sign of exploitation (review the filename and its location) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate microsoft diagcab. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3d0ed417-3d94-4963-a562-4a92c940656a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_diagcab.yml"
+    kind: bioc
+    severity: medium
+    category: file_event
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "\\.diagcab$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: cred-dump-tools-dropped-files-8fbf3271
+    name: Cred Dump Tools Dropped Files
+    description: "Files with well-known filenames (parts of credential dump software or files produced by them) creation Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate Administrator using tool for password recovery. Sigma rule by Teymur Kheirkhabarov, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8fbf3271-1ef6-4e94-8210-03c2317947f6. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_cred_dump_tools_dropped_files.yml"
+    kind: bioc
+    severity: high
+    category: file_event
+    mitre:
+      - T1003.001
+      - T1003.002
+      - T1003.003
+      - T1003.004
+      - T1003.005
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "(?:\\\\fgdump-log|\\\\kirbi|\\\\pwdump|\\\\pwhashes|\\\\wce_ccache|\\\\wce_krbtkts)" or xdm.target.file.path ~= "(?:\\\\cachedump\\.exe|\\\\cachedump64\\.exe|\\\\DumpExt\\.dll|\\\\DumpSvc\\.exe|\\\\Dumpy\\.exe|\\\\fgexec\\.exe|\\\\lsremora\\.dll|\\\\lsremora64\\.dll|\\\\NTDS\\.out|\\\\procdump\\.exe|\\\\procdump64\\.exe|\\\\procdump64a\\.exe|\\\\pstgdump\\.exe|\\\\pwdump\\.exe|\\\\SAM\\.out|\\\\SECURITY\\.out|\\\\servpw\\.exe|\\\\servpw64\\.exe|\\\\SYSTEM\\.out|\\\\test\\.pwd|\\\\wceaux\\.dll)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dpapi-backup-keys-and-certificate-expo-7892ec59
+    name: DPAPI Backup Keys And Certificate Export Activity IOC
+    description: "Detects file names with specific patterns seen generated and used by tools such as Mimikatz and DSInternals related to exported or stolen DPAPI backup keys and certificates. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unlikely. Sigma rule by Nounou Mbeiri, Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7892ec59-c5bb-496d-8968-e5d210ca3ac4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_dpapi_backup_and_cert_export_ioc.yml"
+    kind: bioc
+    severity: high
+    category: file_event
+    mitre:
+      - T1555
+      - T1552.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "(?:ntds_capi_|ntds_legacy_|ntds_unknown_)" and xdm.target.file.path ~= "(?:\\.cer|\\.key|\\.pfx|\\.pvk)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: drop-binaries-into-spool-drivers-color-ce7066a6
+    name: Drop Binaries Into Spool Drivers Color Folder
+    description: 'Detects the creation of suspcious binary files inside the "\windows\system32\spool\drivers\color\" as seen in the blog referenced below Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ce7066a6-508a-42d3-995b-2952c65dc2ce. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_susp_spool_drivers_color_drop.yml'
+    kind: bioc
+    severity: medium
+    category: file_event
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "^C:\\\\Windows\\\\System32\\\\spool\\\\drivers\\\\color\\\\" and xdm.target.file.path ~= "(?:\\.dll|\\.exe|\\.sys)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: dynamic-csharp-compile-artefact-e4a74e34
+    name: Dynamic CSharp Compile Artefact
+    description: |-
+      When C# is compiled dynamically, a .cmdline file will be created as a part of the process.
+      Certain processes are not typically observed compiling C# code, but can do so without touching disk.
+      This can be used to unpack a payload for execution Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e4a74e34-ecde-4aab-b2fb-9112dd01aed0. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_csharp_compile_artefact.yml
+    kind: bioc
+    severity: low
+    category: file_event
+    mitre:
+      - T1027.004
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "\\.cmdline$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: evtx-created-in-uncommon-location-65236ec7
+    name: EVTX Created In Uncommon Location
+    description: |-
+      Detects the creation of new files with the ".evtx" extension in non-common or non-standard location.
+      This could indicate tampering with default EVTX locations in order to evade security controls or simply exfiltration of event log to search for sensitive information within.
+      Note that backup software and legitimate administrator might perform similar actions during troubleshooting. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Administrator or backup activity; An unknown bug seems to trigger the Windows "svchost" process to drop EVTX files in the "C:\Windows\Temp" directory in the form "<log_name">_<uuid>.evtx". See https://superuser.com/questions/1371229/low-disk-space-after-filling-up-c-windows-temp-with-evtx-and-txt-files. Sigma rule by D3F7A5105, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 65236ec7-ace0-4f0c-82fd-737b04fd4dcb. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_create_evtx_non_common_locations.yml
+    kind: bioc
+    severity: medium
+    category: file_event
+    mitre:
+      - T1685.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "\\.evtx$" and not ((xdm.target.file.path ~= "^C:\\\\Windows\\\\System32\\\\winevt\\\\Logs\\\\" or (xdm.target.file.path ~= "^C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Containers\\\\BaseImages\\\\" and xdm.target.file.path contains "\\Windows\\System32\\winevt\\Logs\\"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: files-with-system-dll-name-in-unsuspec-13c02350
+    name: Files With System DLL Name In Unsuspected Locations
+    description: |-
+      Detects the creation of a file with the ".dll" extension that has the name of a System DLL in uncommon or unsuspected locations. (Outside of "System32", "SysWOW64", etc.).
+      It is highly recommended to perform an initial baseline before using this rule in production. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Third party software might bundle specific versions of system DLLs.. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 13c02350-4177-4e45-ac17-cf7ca628ff5e. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_creation_system_dll_files.yml
+    kind: bioc
+    severity: medium
+    category: file_event
+    mitre:
+      - T1036.005
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "(?:\\\\secur32\\.dll|\\\\tdh\\.dll)$" and not (xdm.target.file.path ~= "(?:C:\\\\\\$WINDOWS\\.~BT\\\\|C:\\\\\\$WinREAgent\\\\|C:\\\\Windows\\\\SoftwareDistribution\\\\|C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SysWOW64\\\\|C:\\\\Windows\\\\WinSxS\\\\|C:\\\\Windows\\\\uus\\\\)"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: files-with-system-process-name-in-unsu-d5866ddf
+    name: Files With System Process Name In Unsuspected Locations
+    description: |-
+      Detects the creation of an executable with a system process name in folders other than the system ones (System32, SysWOW64, etc.).
+      It is highly recommended to perform an initial baseline before using this rule in production. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: System processes copied outside their default folders for testing purposes; Third party software naming their software with the same names as the processes mentioned here. Sigma rule by Sander Wiebing, Tim Shelton, Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id d5866ddf-ce8f-4aea-b28e-d96485a20d3d. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_creation_system_file.yml
+    kind: bioc
+    severity: medium
+    category: file_event
+    mitre:
+      - T1036.005
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and ((xdm.target.file.path ~= "(?:\\\\AtBroker\\.exe|\\\\audiodg\\.exe|\\\\backgroundTaskHost\\.exe|\\\\bcdedit\\.exe|\\\\bitsadmin\\.exe|\\\\cmdl32\\.exe|\\\\cmstp\\.exe|\\\\conhost\\.exe|\\\\csrss\\.exe|\\\\dasHost\\.exe|\\\\dfrgui\\.exe|\\\\dllhost\\.exe|\\\\dwm\\.exe|\\\\eventcreate\\.exe|\\\\eventvwr\\.exe|\\\\explorer\\.exe|\\\\extrac32\\.exe|\\\\fontdrvhost\\.exe|\\\\fsquirt\\.exe|\\\\ipconfig\\.exe|\\\\iscsicli\\.exe|\\\\iscsicpl\\.exe|\\\\logman\\.exe)$" or xdm.target.file.path ~= "(?:\\\\LogonUI\\.exe|\\\\LsaIso\\.exe|\\\\lsass\\.exe|\\\\lsm\\.exe|\\\\msiexec\\.exe|\\\\msinfo32\\.exe|\\\\mstsc\\.exe|\\\\nbtstat\\.exe|\\\\odbcconf\\.exe|\\\\powershell\\.exe|\\\\pwsh\\.exe|\\\\regini\\.exe|\\\\regsvr32\\.exe|\\\\rundll32\\.exe|\\\\RuntimeBroker\\.exe|\\\\schtasks\\.exe|\\\\SearchFilterHost\\.exe|\\\\SearchIndexer\\.exe|\\\\SearchProtocolHost\\.exe|\\\\SecurityHealthService\\.exe|\\\\SecurityHealthSystray\\.exe)$" or xdm.target.file.path ~= "(?:\\\\services\\.exe|\\\\ShellAppRuntime\\.exe|\\\\sihost\\.exe|\\\\smartscreen\\.exe|\\\\smss\\.exe|\\\\spoolsv\\.exe|\\\\svchost\\.exe|\\\\SystemSettingsBroker\\.exe|\\\\taskhost\\.exe|\\\\taskhostw\\.exe|\\\\Taskmgr\\.exe|\\\\TiWorker\\.exe|\\\\vssadmin\\.exe|\\\\w32tm\\.exe|\\\\WerFault\\.exe|\\\\WerFaultSecure\\.exe|\\\\wermgr\\.exe|\\\\wevtutil\\.exe|\\\\wininit\\.exe|\\\\winlogon\\.exe|\\\\winrshost\\.exe)$" or xdm.target.file.path ~= "(?:\\\\WinRTNetMUAHostServer\\.exe|\\\\wlanext\\.exe|\\\\wlrmdr\\.exe|\\\\WmiPrvSE\\.exe|\\\\wslhost\\.exe|\\\\WSReset\\.exe|\\\\WUDFHost\\.exe|\\\\WWAHost\\.exe)$") and not ((xdm.target.file.path ~= "(?:C:\\\\\\$WINDOWS\\.~BT\\\\|C:\\\\\\$WinREAgent\\\\|C:\\\\Windows\\\\SoftwareDistribution\\\\|C:\\\\Windows\\\\System32\\\\|C:\\\\Windows\\\\SysWOW64\\\\|C:\\\\Windows\\\\WinSxS\\\\|C:\\\\Windows\\\\uus\\\\)" or (xdm.source.process.executable.path ~= "(?:\\\\TiWorker\\.exe|\\\\wuaucltcore\\.exe)$" and xdm.target.file.path ~= "^C:\\\\Windows\\\\Temp\\\\") or (xdm.source.process.executable.path ~= "(?:C:\\\\Windows\\\\system32\\\\svchost\\.exe|C:\\\\Windows\\\\SysWOW64\\\\svchost\\.exe)$" and xdm.target.file.path ~= "(?:C:\\\\Program Files\\\\WindowsApps\\\\|C:\\\\Program Files \\(x86\\)\\\\WindowsApps\\\\|\\\\AppData\\\\Local\\\\Microsoft\\\\WindowsApps\\\\)") or xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\System32\\\\wuauclt\\.exe|C:\\\\Windows\\\\SysWOW64\\\\wuauclt\\.exe|C:\\\\Windows\\\\UUS\\\\arm64\\\\wuaucltcore\\.exe)$" or xdm.target.file.path ~= "C:\\\\Windows\\\\explorer\\.exe$" or (xdm.source.process.executable.path ~= "(?:C:\\\\WINDOWS\\\\system32\\\\msiexec\\.exe|C:\\\\WINDOWS\\\\SysWOW64\\\\msiexec\\.exe)$" and xdm.target.file.path ~= "^(?:C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh\\.exe|C:\\\\Program Files\\\\PowerShell\\\\7-preview\\\\pwsh\\.exe|C:\\\\Program Files\\\\WindowsApps\\\\Microsoft\\.PowerShellPreview\\\\)") or (xdm.target.file.path contains "C:\\Windows\\System32\\SecurityHealth\\" and xdm.target.file.path ~= "\\\\SecurityHealthSystray\\.exe$" and xdm.source.process.executable.path ~= "\\\\SecurityHealthSetup\\.exe$"))) and not ((xdm.target.file.path ~= "^C:\\\\Program Files\\\\WSL\\\\wslhost\\.exe$" or (xdm.target.file.path ~= "C:\\\\Program Files\\\\WindowsApps\\\\MicrosoftCorporationII\\.WindowsSubsystemForLinux_" and xdm.target.file.path ~= "\\\\wslhost\\.exe") or (xdm.target.file.path ~= "C:\\\\Users\\\\" and xdm.target.file.path ~= "\\\\AppData\\\\Local\\\\Microsoft\\\\WindowsApps\\\\" and xdm.target.file.path ~= "\\\\wslhost\\.exe"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: gotoassist-temporary-installation-arte-5d756aee
+    name: GoToAssist Temporary Installation Artefact
+    description: |-
+      An adversary may use legitimate desktop support and remote access software, such as Team Viewer, Go2Assist, LogMein, AmmyyAdmin, etc, to establish an interactive command and control channel to target systems within networks.
+      These services are commonly used as legitimate technical support software, and may be allowed by application control within a target environment.
+      Remote access tools like VNC, Ammyy, and Teamviewer are used frequently when compared with other legitimate software commonly used by adversaries. (Citation: Symantec Living off the Land) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Legitimate use. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 5d756aee-ad3e-4306-ad95-cb1abec48de2. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_gotoopener_artefact.yml
+    kind: bioc
+    severity: medium
+    category: file_event
+    mitre:
+      - T1219.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path contains "\\AppData\\Local\\Temp\\LogMeInInc\\GoToAssist Remote Support Expert\\"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-crackmapexec-file-indicators-736ffa74
+    name: HackTool - CrackMapExec File Indicators
+    description: "Detects file creation events with filename patterns used by CrackMapExec. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Regular expressions here ignore case in ASIX; in Sigma they are case-sensitive unless |i is given, so this rule can match a little more. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 736ffa74-5f6f-44ca-94ef-1c0df4f51d2a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_hktl_crackmapexec_indicators.yml"
+    kind: bioc
+    severity: high
+    category: file_event
+    mitre:
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.target.file.path ~= "^C:\\\\Windows\\\\Temp\\\\" and (xdm.target.file.path ~= "(?:\\\\temp\\.ps1|\\\\msol\\.ps1)$" or (xdm.target.file.path ~= "\\\\[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.txt$" or xdm.target.file.path ~= "\\\\[a-zA-Z]{8}\\.tmp$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-dumpert-process-dumper-defaul-93d94efc
+    name: HackTool - Dumpert Process Dumper Default File
+    description: "Detects the creation of the default dump file used by Outflank Dumpert tool. A process dumper, which dumps the lsass process memory Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Very unlikely. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 93d94efc-d7ad-4161-ad7d-1638c4f908d8. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_hktl_dumpert.yml"
+    kind: bioc
+    severity: critical
+    category: file_event
+    mitre:
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "dumpert\\.dmp$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-impacket-file-indicators-03f4ca17
+    name: HackTool - Impacket File Indicators
+    description: "Detects file creation events with filename patterns used by Impacket. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Regular expressions here ignore case in ASIX; in Sigma they are case-sensitive unless |i is given, so this rule can match a little more. Sigma rule by The DFIR Report, IrishDeath, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 03f4ca17-de95-428d-a75a-4ee78b047256. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_impacket_file_indicators.yml"
+    kind: bioc
+    severity: high
+    category: file_event
+    mitre:
+      - T1003.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "\\\\sessionresume_[a-zA-Z]{8}$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-inveigh-execution-artefacts-bb09dd3e
+    name: HackTool - Inveigh Execution Artefacts
+    description: "Detects the presence and execution of Inveigh via dropped artefacts Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unlikely. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id bb09dd3e-2b78-4819-8e35-a7c1b874e449. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_hktl_inveigh_artefacts.yml"
+    kind: bioc
+    severity: critical
+    category: file_event
+    mitre:
+      - T1219.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "(?:\\\\Inveigh-Log\\.txt|\\\\Inveigh-Cleartext\\.txt|\\\\Inveigh-NTLMv1Users\\.txt|\\\\Inveigh-NTLMv2Users\\.txt|\\\\Inveigh-NTLMv1\\.txt|\\\\Inveigh-NTLMv2\\.txt|\\\\Inveigh-FormInput\\.txt|\\\\Inveigh\\.dll|\\\\Inveigh\\.exe|\\\\Inveigh\\.ps1|\\\\Inveigh-Relay\\.ps1)$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-mimikatz-kirbi-file-creation-9e099d99
+    name: HackTool - Mimikatz Kirbi File Creation
+    description: 'Detects the creation of files created by mimikatz such as ".kirbi", "mimilsa.log", etc. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unlikely. Sigma rule by Florian Roth (Nextron Systems), David ANDRE, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9e099d99-44c2-42b6-a6d8-54c3545cab29. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_hktl_mimikatz_files.yml'
+    kind: bioc
+    severity: critical
+    category: file_event
+    mitre:
+      - T1558
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "(?:\\.kirbi|mimilsa\\.log)$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-nppspy-hacktool-usage-cad1fe90
+    name: HackTool - NPPSpy Hacktool Usage
+    description: "Detects the use of NPPSpy hacktool that stores cleartext passwords of users that logged in to a local file Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id cad1fe90-2406-44dc-bd03-59d0b58fe722. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_hktl_nppspy.yml"
+    kind: bioc
+    severity: high
+    category: file_event
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and xdm.target.file.path ~= "(?:\\\\NPPSpy\\.txt|\\\\NPPSpy\\.dll)$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: hacktool-potential-remote-credential-d-6e2a900a
+    name: HackTool - Potential Remote Credential Dumping Activity Via CrackMapExec Or Impacket-Secretsdump
+    description: "Detects default filenames output from the execution of CrackMapExec and Impacket-secretsdump against an endpoint. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 11). Known false positives: Unknown. Regular expressions here ignore case in ASIX; in Sigma they are case-sensitive unless |i is given, so this rule can match a little more. Sigma rule by SecurityAura, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 6e2a900a-ced9-4e4a-a9c2-13e706f9518a. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/file/file_event/file_event_win_hktl_remote_cred_dump.yml"
+    kind: bioc
+    severity: high
+    category: file_event
+    mitre:
+      - T1003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "file" and xdm.event.operation = "file_created" and (xdm.source.process.executable.path ~= "\\\\svchost\\.exe$" and xdm.target.file.path ~= "\\\\Windows\\\\System32\\\\[a-zA-Z0-9]{8}\\.tmp$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 2026.1118.0
+    released: 2026-11-18
+    notes: Converted from the SigmaHQ rules at 698f0912f571d5fac3bf8c51f5421139834a011c.

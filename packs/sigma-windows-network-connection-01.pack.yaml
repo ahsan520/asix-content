@@ -1,0 +1,746 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: sigma-windows-network-connection-01
+name: "Sigma: Windows network connection"
+description: "32 detection rules from the SigmaHQ community rule set (698f0912f571d5fac3bf8c51f5421139834a011c), converted for ASIX: Windows network connection events, grouped by tactic, starting with Discovery. They install switched off: read each one, check it against your own logs, then switch it on. Every rule names its author, as the Detection Rule License requires."
+version: 2026.1118.0
+audience: enterprise
+publisher:
+  name: SigmaHQ community, converted for ASIX
+  url: https://github.com/SigmaHQ/sigma
+certification: community
+supported_by: community
+rules_start_off: true
+tags:
+  - sigma
+  - windows
+  - network-connection
+license: DRL-1.1
+sources:
+  - Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3)
+rules:
+  - key: suspicious-network-connection-to-ip-lo-edf3485d
+    name: Suspicious Network Connection to IP Lookup Service APIs
+    description: 'Detects external IP address lookups by non-browser processes via services such as "api.ipify.org". This could be indicative of potential post compromise internet test activity. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate use of the external websites for troubleshooting or network monitoring. Sigma rule by Janantha Marasinghe, Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id edf3485d-dac4-4d50-90e4-b0e5813f7e60. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_external_ip_lookup.yml'
+    kind: bioc
+    severity: medium
+    category: Discovery
+    mitre:
+      - T1016
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and ((xdm.target.fqdn ~= "^(?:www\\.ip\\.cn|l2\\.io)$" or (xdm.target.fqdn ~= "(?:api\\.2ip\\.ua|api\\.bigdatacloud\\.net|api\\.ipify\\.org|bot\\.whatismyipaddress\\.com|canireachthe\\.net|checkip\\.amazonaws\\.com|checkip\\.dyndns\\.org|curlmyip\\.com|db-ip\\.com|edns\\.ip-api\\.com|eth0\\.me|freegeoip\\.app|geoipy\\.com|getip\\.pro|icanhazip\\.com|ident\\.me|ifconfig\\.io|ifconfig\\.me|ip-api\\.com|ip\\.360\\.cn|ip\\.anysrc\\.net|ip\\.taobao\\.com|ip\\.tyk\\.nu|ipaddressworld\\.com)" or xdm.target.fqdn ~= "(?:ipapi\\.co|ipconfig\\.io|ipecho\\.net|ipinfo\\.io|ipip\\.net|ipof\\.in|ipv4\\.icanhazip\\.com|ipv4bot\\.whatismyipaddress\\.com|ipv6-test\\.com|ipwho\\.is|jsonip\\.com|myexternalip\\.com|seeip\\.org|wgetip\\.com|whatismyip\\.akamai\\.com|whois\\.pconline\\.com\\.cn|wtfismyip\\.com)")) and not ((xdm.source.process.executable.path ~= "\\\\brave\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe|C:\\\\Program Files \\(x86\\)\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Mozilla Firefox\\\\firefox\\.exe|C:\\\\Program Files \\(x86\\)\\\\Mozilla Firefox\\\\firefox\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Internet Explorer\\\\iexplore\\.exe|C:\\\\Program Files\\\\Internet Explorer\\\\iexplore\\.exe)$" or xdm.source.process.executable.path ~= "\\\\maxthon\\.exe$" or (xdm.source.process.executable.path ~= "^C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeWebView\\\\Application\\\\" or xdm.source.process.executable.path ~= "\\\\WindowsApps\\\\MicrosoftEdge\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe|C:\\\\Program Files\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe)$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeCore\\\\|C:\\\\Program Files\\\\Microsoft\\\\EdgeCore\\\\)" and xdm.source.process.executable.path ~= "(?:\\\\msedge\\.exe|\\\\msedgewebview2\\.exe)$") or xdm.source.process.executable.path ~= "\\\\opera\\.exe$" or xdm.source.process.executable.path ~= "\\\\safari\\.exe$" or xdm.source.process.executable.path ~= "\\\\seamonkey\\.exe$" or xdm.source.process.executable.path ~= "\\\\vivaldi\\.exe$" or xdm.source.process.executable.path ~= "\\\\whale\\.exe$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: uncommon-connection-to-active-director-b3ad3c0f
+    name: Uncommon Connection to Active Directory Web Services
+    description: "Detects uncommon network connections to the Active Directory Web Services (ADWS) from processes not typically associated with ADWS management. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: ADWS is used by a number of legitimate applications that need to interact with Active Directory. These applications should be added to the allow-listing to avoid false positives.. Sigma rule by @kostastsale, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b3ad3c0f-c949-47a1-a30e-b0491ccae876. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_adws_unusual_connection.yml"
+    kind: bioc
+    severity: medium
+    category: Discovery
+    mitre:
+      - T1087
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and ((xdm.network.direction = "OUTBOUND" and xdm.target.port ~= "^9389$") and not ((xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\system32\\\\dsac\\.exe$" or xdm.source.process.executable.path ~= "^C:\\\\Program Files\\\\Microsoft Monitoring Agent\\\\" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\PowerShell\\\\7-preview\\\\pwsh\\.exe|C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh\\.exe|C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1\\.0\\\\powershell_ise\\.exe|C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1\\.0\\\\powershell\\.exe|C:\\\\Windows\\\\SysWOW64\\\\WindowsPowerShell\\\\v1\\.0\\\\powershell_ise\\.exe|C:\\\\Windows\\\\SysWOW64\\\\WindowsPowerShell\\\\v1\\.0\\\\powershell\\.exe)$" or (xdm.source.process.executable.path ~= "(?:C:\\\\Program Files\\\\WindowsApps\\\\Microsoft\\.PowerShellPreview|\\\\AppData\\\\Local\\\\Microsoft\\\\WindowsApps\\\\Microsoft\\.PowerShellPreview)" and xdm.source.process.executable.path ~= "\\\\pwsh\\.exe$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-by-eqnedt-a66bc059
+    name: Network Connection Initiated By Eqnedt32.EXE
+    description: 'Detects network connections from the Equation Editor process "eqnedt32.exe". Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Unlikely. Sigma rule by Max Altgelt (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id a66bc059-c370-472c-a0d7-f8fd1bf9d583. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_eqnedt.yml'
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1203
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and xdm.source.process.executable.path ~= "\\\\eqnedt32\\.exe$"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-by-regsvr-c7e91a02
+    name: Network Connection Initiated By Regsvr32.EXE
+    description: 'Detects a network connection initiated by "Regsvr32.exe" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Unknown. Sigma rule by Dmitriy Lifanov, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c7e91a02-d771-4a6d-a700-42587e0b1095. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_regsvr32_network_activity.yml'
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1559.001
+      - T1218.010
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.network.direction = "OUTBOUND" and xdm.source.process.executable.path ~= "\\\\regsvr32\\.exe$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-via-finge-2fdaf50b
+    name: Network Connection Initiated via Finger.EXE
+    description: |-
+      Detects network connections via finger.exe, which can be abused by threat actors to retrieve remote commands for execution on Windows devices.
+      In one ClickFix malware campaign, adversaries leveraged the finger protocol to fetch commands from a remote server.
+      Since the finger utility is not commonly used in modern Windows environments, its presence already raises suspicion.
+      Investigating such network connections can also help identify potential malicious infrastructure used by threat actors Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Unlikely. Sigma rule by Swachchhanda Shrawan Poudel (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 2fdaf50b-9fd5-449f-ba69-f17248119af6. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_finger.yml
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1071.004
+      - T1059.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.network.direction = "OUTBOUND" and xdm.source.process.executable.path ~= "\\\\finger\\.exe$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-via-notep-e81528db
+    name: Network Connection Initiated Via Notepad.EXE
+    description: |-
+      Detects a network connection that is initiated by the "notepad.exe" process.
+      This might be a sign of process injection from a beacon process or something similar.
+      Notepad rarely initiates a network communication except when printing documents for example. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Printing documents via notepad might cause communication with the printer via port 9100 or similar.. Sigma rule by EagleEye Team, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e81528db-fc02-45e8-8e98-4e84aba1f10b. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_notepad.yml
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1055
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.source.process.executable.path ~= "\\\\notepad\\.exe$" and not (xdm.target.port ~= "^9100$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: silenttrinity-stager-msbuild-activity-50e54b8d
+    name: Silenttrinity Stager Msbuild Activity
+    description: "Detects a possible remote connections to Silenttrinity c2 Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Unknown. Sigma rule by Kiran kumar s, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 50e54b8d-ad73-43f8-96a1-5191685b17a4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_silenttrinity_stager_msbuild_activity.yml"
+    kind: bioc
+    severity: high
+    category: Execution
+    mitre:
+      - T1127.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.source.process.executable.path ~= "\\\\msbuild\\.exe$" and (xdm.target.port ~= "^(?:80|443)$" and xdm.network.direction = "OUTBOUND"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: communication-to-ngrok-tunneling-servi-1d08ac94
+    name: Communication To Ngrok Tunneling Service Initiated
+    description: |-
+      Detects an executable initiating a network connection to "ngrok" tunneling domains.
+      Attackers were seen using this "ngrok" in order to store their second stage payloads and malware.
+      While communication with such domains can be legitimate, often times is a sign of either data exfiltration by malicious actors or additional download. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate use of the ngrok service.. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 1d08ac94-400d-4469-a82f-daee9a908849. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_ngrok_tunnel.yml
+    kind: bioc
+    severity: high
+    category: Exfiltration
+    mitre:
+      - T1567
+      - T1568.002
+      - T1572
+      - T1090
+      - T1102
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and xdm.target.fqdn ~= "(?:tunnel\\.us\\.ngrok\\.com|tunnel\\.eu\\.ngrok\\.com|tunnel\\.ap\\.ngrok\\.com|tunnel\\.au\\.ngrok\\.com|tunnel\\.sa\\.ngrok\\.com|tunnel\\.jp\\.ngrok\\.com|tunnel\\.in\\.ngrok\\.com)"
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-communication-initiated-to-por-07837ab9
+    name: Network Communication Initiated To Portmap.IO Domain
+    description: "Detects an executable accessing the portmap.io domain, which could be a sign of forbidden C2 traffic or data exfiltration by malicious actors Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate use of portmap.io domains. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 07837ab9-60e1-481f-a74d-c31fb496a94c. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_portmap.yml"
+    kind: bioc
+    severity: medium
+    category: Exfiltration
+    mitre:
+      - T1041
+      - T1090.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.network.direction = "OUTBOUND" and xdm.target.fqdn ~= "\\.portmap\\.io$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-to-btunne-9e02c8ec
+    name: Network Connection Initiated To BTunnels Domains
+    description: |-
+      Detects network connections to BTunnels domains initiated by a process on the system.
+      Attackers can abuse that feature to establish a reverse shell or persistence on a machine. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate use of BTunnels will also trigger this.. Sigma rule by Kamran Saifullah, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9e02c8ec-02b9-43e8-81eb-34a475ba7965. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_btunnels.yml
+    kind: bioc
+    severity: medium
+    category: Exfiltration
+    mitre:
+      - T1567
+      - T1572
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.network.direction = "OUTBOUND" and xdm.target.fqdn ~= "\\.btunnel\\.co\\.in$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-to-cloudf-7cd1dcdc
+    name: Network Connection Initiated To Cloudflared Tunnels Domains
+    description: |-
+      Detects network connections to Cloudflared tunnels domains initiated by a process on the system.
+      Attackers can abuse that feature to establish a reverse shell or persistence on a machine. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate use of cloudflare tunnels will also trigger this.. Sigma rule by Kamran Saifullah, Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7cd1dcdc-6edf-4896-86dc-d1f19ad64903. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_cloudflared_communication.yml
+    kind: bioc
+    severity: medium
+    category: Exfiltration
+    mitre:
+      - T1567
+      - T1572
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.network.direction = "OUTBOUND" and xdm.target.fqdn ~= "(?:\\.v2\\.argotunnel\\.com|protocol-v2\\.argotunnel\\.com|trycloudflare\\.com|update\\.argotunnel\\.com)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-to-devtun-9501f8e6
+    name: Network Connection Initiated To DevTunnels Domain
+    description: "Detects network connections to Devtunnels domains initiated by a process on a system. Attackers can abuse that feature to establish a reverse shell or persistence on a machine. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate use of Devtunnels will also trigger this.. Sigma rule by Kamran Saifullah, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9501f8e6-8e3d-48fc-a8a6-1089dd5d7ef4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_devtunnels.yml"
+    kind: bioc
+    severity: medium
+    category: Exfiltration
+    mitre:
+      - T1567.001
+      - T1572
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.network.direction = "OUTBOUND" and xdm.target.fqdn ~= "\\.devtunnels\\.ms$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-to-mega-n-fdeebdf0
+    name: Network Connection Initiated To Mega.nz
+    description: |-
+      Detects a network connection initiated by a binary to "api.mega.co.nz".
+      Attackers were seen abusing file sharing websites similar to "mega.nz" in order to upload/download additional payloads. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate MEGA installers and utilities are expected to communicate with this domain. Exclude hosts that are known to be allowed to use this tool.. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id fdeebdf0-9f3f-4d08-84a6-4c4d13e39fe4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_mega_nz.yml
+    kind: bioc
+    severity: low
+    category: Exfiltration
+    mitre:
+      - T1567.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.network.direction = "OUTBOUND" and xdm.target.fqdn ~= "(?:mega\\.co\\.nz|mega\\.nz)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-to-visual-4b657234
+    name: Network Connection Initiated To Visual Studio Code Tunnels Domain
+    description: "Detects network connections to Visual Studio Code tunnel domains initiated by a process on a system. Attackers can abuse that feature to establish a reverse shell or persistence on a machine. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate use of Visual Studio Code tunnel will also trigger this.. Sigma rule by Kamran Saifullah, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 4b657234-038e-4ad5-997c-4be42340bce4. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_vscode_tunnel_connection.yml"
+    kind: bioc
+    severity: medium
+    category: Exfiltration
+    mitre:
+      - T1567
+      - T1572
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.network.direction = "OUTBOUND" and xdm.target.fqdn ~= "\\.tunnels\\.api\\.visualstudio\\.com$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: process-initiated-network-connection-t-18249279
+    name: Process Initiated Network Connection To Ngrok Domain
+    description: |-
+      Detects an executable initiating a network connection to "ngrok" domains.
+      Attackers were seen using this "ngrok" in order to store their second stage payloads and malware.
+      While communication with such domains can be legitimate, often times is a sign of either data exfiltration by malicious actors or additional download. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate use of the ngrok service.. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 18249279-932f-45e2-b37a-8925f2597670. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_ngrok.yml
+    kind: bioc
+    severity: high
+    category: Exfiltration
+    mitre:
+      - T1567
+      - T1572
+      - T1102
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.network.direction = "OUTBOUND" and xdm.target.fqdn ~= "(?:\\.ngrok-free\\.app|\\.ngrok-free\\.dev|\\.ngrok\\.app|\\.ngrok\\.dev|\\.ngrok\\.io)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-dropbox-api-usage-25eabf56
+    name: Suspicious Dropbox API Usage
+    description: "Detects an executable that isn't dropbox but communicates with the Dropbox API Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate use of the API with a tool that the author wasn't aware of. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 25eabf56-22f0-4915-a1ed-056b8dae0a68. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_dropbox_api.yml"
+    kind: bioc
+    severity: high
+    category: Exfiltration
+    mitre:
+      - T1105
+      - T1567.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and ((xdm.network.direction = "OUTBOUND" and xdm.target.fqdn ~= "(?:api\\.dropboxapi\\.com|content\\.dropboxapi\\.com)$") and not (xdm.source.process.executable.path contains "\\Dropbox"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-non-browser-network-communi-c3dbbc9f
+    name: Suspicious Non-Browser Network Communication With Telegram API
+    description: "Detects an a non-browser process interacting with the Telegram API which could indicate use of a covert C2 Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate applications communicating with the Telegram API e.g. web browsers not in the exclusion list, app with an RSS  etc.. Sigma rule by Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id c3dbbc9f-ef1d-470a-a90a-d343448d5875. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_telegram_api_non_browser_access.yml"
+    kind: bioc
+    severity: medium
+    category: Exfiltration
+    mitre:
+      - T1102
+      - T1567
+      - T1105
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.target.fqdn contains "api.telegram.org" and not ((xdm.source.process.executable.path ~= "\\\\brave\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe|C:\\\\Program Files \\(x86\\)\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Mozilla Firefox\\\\firefox\\.exe|C:\\\\Program Files \\(x86\\)\\\\Mozilla Firefox\\\\firefox\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Internet Explorer\\\\iexplore\\.exe|C:\\\\Program Files\\\\Internet Explorer\\\\iexplore\\.exe)$" or xdm.source.process.executable.path ~= "\\\\maxthon\\.exe$" or (xdm.source.process.executable.path ~= "^C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeWebView\\\\Application\\\\" or xdm.source.process.executable.path ~= "\\\\WindowsApps\\\\MicrosoftEdge\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe|C:\\\\Program Files\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe)$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeCore\\\\|C:\\\\Program Files\\\\Microsoft\\\\EdgeCore\\\\)" and xdm.source.process.executable.path ~= "(?:\\\\msedge\\.exe|\\\\msedgewebview2\\.exe)$") or xdm.source.process.executable.path ~= "\\\\opera\\.exe$" or xdm.source.process.executable.path ~= "\\\\safari\\.exe$" or xdm.source.process.executable.path ~= "\\\\seamonkey\\.exe$" or xdm.source.process.executable.path ~= "\\\\vivaldi\\.exe$" or xdm.source.process.executable.path ~= "\\\\whale\\.exe$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-outbound-smtp-connections-9976fa64
+    name: Suspicious Outbound SMTP Connections
+    description: |-
+      Adversaries may steal data by exfiltrating it over an un-encrypted network protocol other than that of the existing command and control channel.
+      The data may also be sent to an alternate network location from the main command and control server. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Other SMTP tools. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 9976fa64-2804-423c-8a5b-646ade840773. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_susp_outbound_smtp_connections.yml
+    kind: bioc
+    severity: medium
+    category: Exfiltration
+    mitre:
+      - T1048.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and ((xdm.target.port ~= "^(?:25|587|465|2525)$" and xdm.network.direction = "OUTBOUND") and not ((xdm.source.process.executable.path ~= "(?:\\\\thunderbird\\.exe|\\\\outlook\\.exe)$" or xdm.source.process.executable.path ~= "^C:\\\\Program Files\\\\Microsoft\\\\Exchange Server\\\\" or (xdm.source.process.executable.path ~= "^C:\\\\Program Files\\\\WindowsApps\\\\microsoft\\.windowscommunicationsapps_" and xdm.source.process.executable.path ~= "\\\\HxTsr\\.exe$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: communication-to-localtonet-tunneling-3ab65069
+    name: Communication To LocaltoNet Tunneling Service Initiated
+    description: |-
+      Detects an executable initiating a network connection to "LocaltoNet" tunneling sub-domains.
+      LocaltoNet is a reverse proxy that enables localhost services to be exposed to the Internet.
+      Attackers have been seen to use this service for command-and-control activities to bypass MFA and perimeter controls. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate use of the LocaltoNet service.. Sigma rule by Andreas Braathen (mnemonic.io), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3ab65069-d82a-4d44-a759-466661a082d1. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_localtonet_tunnel.yml
+    kind: bioc
+    severity: high
+    category: network_connection
+    mitre:
+      - T1572
+      - T1090
+      - T1102
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.target.fqdn ~= "(?:\\.localto\\.net|\\.localtonet\\.com)$" and xdm.network.direction = "OUTBOUND")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-communication-initiated-to-fil-e0f8ab85
+    name: Network Communication Initiated To File Sharing Domains From Process Located In Suspicious Folder
+    description: "Detects executables located in potentially suspicious directories initiating network connections towards file sharing domains. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Some installers located in the temp directory might communicate with the Github domains in order to download additional software. Baseline these cases or move the github domain to a lower level hunting rule.. Sigma rule by Florian Roth (Nextron Systems), Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e0f8ab85-0ac9-423b-a73a-81b3c7b1aa97. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_susp_file_sharing_domains_susp_folders.yml"
+    kind: bioc
+    severity: high
+    category: network_connection
+    mitre:
+      - T1105
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.source.process.executable.path ~= "(?::\\\\\\$Recycle\\.bin|:\\\\Perflogs\\\\|:\\\\Temp\\\\|:\\\\Users\\\\Default\\\\|:\\\\Users\\\\Public\\\\|:\\\\Windows\\\\Fonts\\\\|:\\\\Windows\\\\IME\\\\|:\\\\Windows\\\\System32\\\\Tasks\\\\|:\\\\Windows\\\\Tasks\\\\|:\\\\Windows\\\\Temp\\\\|\\\\AppData\\\\Temp\\\\|\\\\config\\\\systemprofile\\\\|\\\\Windows\\\\addins\\\\)" and (xdm.network.direction = "OUTBOUND" and (xdm.target.fqdn ~= "(?:\\.githubusercontent\\.com|0x0\\.st|anonfiles\\.com|bashupload\\.com|cdn\\.discordapp\\.com|chunk\\.io|ddns\\.net|dl\\.dropboxusercontent\\.com|ghostbin\\.co|github\\.com|glitch\\.me|gofile\\.io|hastebin\\.com|mediafire\\.com|mega\\.co\\.nz|mega\\.nz|onrender\\.com|pages\\.dev|paste\\.ee|pastebin\\.com|pastebin\\.pl|pastetext\\.net|pixeldrain\\.com|privatlab\\.com|privatlab\\.net|send\\.exploit\\.in)$" or xdm.target.fqdn ~= "(?:sendspace\\.com|storage\\.googleapis\\.com|storjshare\\.io|supabase\\.co|temp\\.sh|transfer\\.sh|trycloudflare\\.com|ufile\\.io|w3spaces\\.com|workers\\.dev|x0\\.at)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-by-addinu-5205613d
+    name: Network Connection Initiated By AddinUtil.EXE
+    description: |-
+      Detects a network connection initiated by the Add-In deployment cache updating utility "AddInutil.exe".
+      This could indicate a potential command and control communication as this tool doesn't usually initiate network activity. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Unknown. Sigma rule by Michael McKinley (@McKinleyMike), Tony Latteri (@TheLatteri), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 5205613d-2a63-4412-a895-3a2458b587b3. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_addinutil_initiated.yml
+    kind: bioc
+    severity: high
+    category: network_connection
+    mitre:
+      - T1218
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.network.direction = "OUTBOUND" and xdm.source.process.executable.path ~= "\\\\addinutil\\.exe$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-by-imewdb-8d7e392e
+    name: Network Connection Initiated By IMEWDBLD.EXE
+    description: "Detects a network connection initiated by IMEWDBLD.EXE. This might indicate potential abuse of the utility as a LOLBIN in order to download arbitrary files or additional payloads. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Unknown. Sigma rule by frack113, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 8d7e392e-9b28-49e1-831d-5949c6281228. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_imewdbld.yml"
+    kind: bioc
+    severity: high
+    category: network_connection
+    mitre:
+      - T1105
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.network.direction = "OUTBOUND" and xdm.source.process.executable.path ~= "\\\\IMEWDBLD\\.exe$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: network-connection-initiated-from-proc-7b434893
+    name: Network Connection Initiated From Process Located In Potentially Suspicious Or Uncommon Location
+    description: "Detects a network connection initiated by programs or processes running from suspicious or uncommon files system locations. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7b434893-c57d-4f41-908d-6a17bf1ae98f. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_susp_initiated_uncommon_or_suspicious_locations.yml"
+    kind: bioc
+    severity: high
+    category: network_connection
+    mitre:
+      - T1105
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and ((xdm.network.direction = "OUTBOUND" and xdm.source.process.executable.path ~= "(?::\\\\\\$Recycle\\.bin|:\\\\Perflogs\\\\|:\\\\Temp\\\\|:\\\\Users\\\\Default\\\\|:\\\\Users\\\\Public\\\\|:\\\\Windows\\\\Fonts\\\\|:\\\\Windows\\\\IME\\\\|:\\\\Windows\\\\System32\\\\Tasks\\\\|:\\\\Windows\\\\Tasks\\\\|\\\\config\\\\systemprofile\\\\|\\\\Contacts\\\\|\\\\Favorites\\\\|\\\\Favourites\\\\|\\\\Music\\\\|\\\\Pictures\\\\|\\\\Videos\\\\|\\\\Windows\\\\addins\\\\)") and not ((xdm.target.fqdn ~= "(?:\\.githubusercontent\\.com|0x0\\.st|anonfiles\\.com|bashupload\\.com|cdn\\.discordapp\\.com|chunk\\.io|ddns\\.net|dl\\.dropboxusercontent\\.com|ghostbin\\.co|github\\.com|glitch\\.me|gofile\\.io|hastebin\\.com|mediafire\\.com|mega\\.co\\.nz|mega\\.nz|onrender\\.com|pages\\.dev|paste\\.ee|pastebin\\.com|pastebin\\.pl|pastetext\\.net|portmap\\.io|privatlab\\.com|privatlab\\.net|send\\.exploit\\.in)$" or xdm.target.fqdn ~= "(?:sendspace\\.com|storage\\.googleapis\\.com|storjshare\\.io|supabase\\.co|temp\\.sh|transfer\\.sh|trycloudflare\\.com|ufile\\.io|w3spaces\\.com|workers\\.dev|x0\\.at)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: office-application-initiated-network-c-3b5ba899
+    name: Office Application Initiated Network Connection Over Uncommon Ports
+    description: "Detects an office suit application (Word, Excel, PowerPoint, Outlook) communicating to target systems over uncommon ports. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Other ports can be used, apply additional filters accordingly. Sigma rule by X__Junior (Nextron Systems), Nasreddine Bencherchali (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 3b5ba899-9842-4bc2-acc2-12308498bf42. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_office_uncommon_ports.yml"
+    kind: bioc
+    severity: medium
+    category: network_connection
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and ((xdm.network.direction = "OUTBOUND" and xdm.source.process.executable.path ~= "(?:\\\\excel\\.exe|\\\\outlook\\.exe|\\\\powerpnt\\.exe|\\\\winword\\.exe|\\\\wordview\\.exe)$") and not ((xdm.target.port ~= "^(?:53|80|139|389|443|445|3268)$" or (xdm.source.process.executable.path contains ":\\Program Files\\Microsoft Office\\" and xdm.source.process.executable.path ~= "\\\\OUTLOOK\\.EXE$" and xdm.target.port ~= "^(?:143|465|587|993|995)$"))))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: outbound-rdp-connections-over-non-stan-ed74fe75
+    name: Outbound RDP Connections Over Non-Standard Tools
+    description: |-
+      Detects Non-Standard tools initiating a connection over port 3389 indicating possible lateral movement.
+      An initial baseline is required before using this utility to exclude third party RDP tooling that you might use. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Third party RDP tools. Sigma rule by Markus Neis, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id ed74fe75-7594-4b4b-ae38-e38e3fd2eb23. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_rdp_outbound_over_non_standard_tools.yml
+    kind: bioc
+    severity: high
+    category: network_connection
+    mitre:
+      - T1021.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and ((xdm.target.port ~= "^3389$" and xdm.network.direction = "OUTBOUND") and not (xdm.source.process.executable.path ~= "^(?:C:\\\\Windows\\\\System32\\\\mstsc\\.exe|C:\\\\Windows\\\\SysWOW64\\\\mstsc\\.exe)$") and not (((xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\System32\\\\dns\\.exe$" and xdm.source.port ~= "^53$" and xdm.network.ip_protocol ~= "^udp$") or xdm.source.process.executable.path ~= "(?:\\\\Avast Software\\\\Avast\\\\AvastSvc\\.exe|\\\\Avast\\\\AvastSvc\\.exe)$" or xdm.source.process.executable.path ~= "\\\\RDCMan\\.exe$" or xdm.source.process.executable.path ~= "^C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe$" or xdm.source.process.executable.path ~= "(?:\\\\FSAssessment\\.exe|\\\\FSDiscovery\\.exe|\\\\MobaRTE\\.exe|\\\\mRemote\\.exe|\\\\mRemoteNG\\.exe|\\\\Passwordstate\\.exe|\\\\RemoteDesktopManager\\.exe|\\\\RemoteDesktopManager64\\.exe|\\\\RemoteDesktopManagerFree\\.exe|\\\\RSSensor\\.exe|\\\\RTS2App\\.exe|\\\\RTSApp\\.exe|\\\\spiceworks-finder\\.exe|\\\\Terminals\\.exe|\\\\ws_TunnelService\\.exe)$" or xdm.source.process.executable.path ~= "(?:\\\\thor\\.exe|\\\\thor64\\.exe)$" or xdm.source.process.executable.path ~= "^C:\\\\Program Files\\\\SplunkUniversalForwarder\\\\bin\\\\" or xdm.source.process.executable.path ~= "\\\\Ranger\\\\SentinelRanger\\.exe$" or xdm.source.process.executable.path ~= "^C:\\\\Program Files\\\\Mozilla Firefox\\\\firefox\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\TSplus\\\\Java\\\\bin\\\\HTML5service\\.exe|C:\\\\Program Files \\(x86\\)\\\\TSplus\\\\Java\\\\bin\\\\HTML5service\\.exe)$" or not (xdm.source.process.executable.path ~= ".") or not (xdm.source.process.executable.path ~= ".") or xdm.source.process.executable.path ~= "^<unknown process>$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: potentially-suspicious-network-connect-7e9cf7b6
+    name: Potentially Suspicious Network Connection To Notion API
+    description: 'Detects a non-browser process communicating with the Notion API. This could indicate potential use of a covert C2 channel such as "OffensiveNotion C2" Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate applications communicating with the "api.notion.com" endpoint that are not already in the exclusion list. The desktop and browser applications do not appear to be using the API by default unless integrations are configured.. Sigma rule by Gavin Knapp, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7e9cf7b6-e827-11ed-a05b-15959c120003. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_notion_api_susp_communication.yml'
+    kind: bioc
+    severity: low
+    category: network_connection
+    mitre:
+      - T1102
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.target.fqdn contains "api.notion.com" and not ((xdm.source.process.executable.path ~= "\\\\AppData\\\\Local\\\\Programs\\\\Notion\\\\Notion\\.exe$" or xdm.source.process.executable.path ~= "\\\\brave\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe|C:\\\\Program Files \\(x86\\)\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Mozilla Firefox\\\\firefox\\.exe|C:\\\\Program Files \\(x86\\)\\\\Mozilla Firefox\\\\firefox\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Internet Explorer\\\\iexplore\\.exe|C:\\\\Program Files\\\\Internet Explorer\\\\iexplore\\.exe)$" or xdm.source.process.executable.path ~= "\\\\maxthon\\.exe$" or (xdm.source.process.executable.path ~= "^C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeWebView\\\\Application\\\\" or xdm.source.process.executable.path ~= "\\\\WindowsApps\\\\MicrosoftEdge\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe|C:\\\\Program Files\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe)$") or (xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeCore\\\\|C:\\\\Program Files\\\\Microsoft\\\\EdgeCore\\\\)" and xdm.source.process.executable.path ~= "(?:\\\\msedge\\.exe|\\\\msedgewebview2\\.exe)$") or xdm.source.process.executable.path ~= "\\\\opera\\.exe$" or xdm.source.process.executable.path ~= "\\\\safari\\.exe$" or xdm.source.process.executable.path ~= "\\\\seamonkey\\.exe$" or xdm.source.process.executable.path ~= "\\\\vivaldi\\.exe$" or xdm.source.process.executable.path ~= "\\\\whale\\.exe$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: rdp-to-http-or-https-target-ports-b1e5da3b
+    name: RDP to HTTP or HTTPS Target Ports
+    description: "Detects svchost hosting RDP termsvcs communicating to target systems on TCP port 80 or 443 Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Unknown. Sigma rule by Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id b1e5da3b-ca8e-4adf-915c-9921f3d85481. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_rdp_to_http.yml"
+    kind: bioc
+    severity: high
+    category: network_connection
+    mitre:
+      - T1572
+      - T1021.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.source.process.executable.path ~= "\\\\svchost\\.exe$" and xdm.network.direction = "OUTBOUND" and xdm.source.port ~= "^3389$" and xdm.target.port ~= "^(?:80|443)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-non-browser-network-communi-7e9cf7b6
+    name: Suspicious Non-Browser Network Communication With Google API
+    description: 'Detects a non-browser process interacting with the Google API which could indicate the use of a covert C2 such as Google Sheet C2 (GC2-sheet) Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate applications communicating with the "googleapis.com" endpoints that are not already in the exclusion list. This is environmental dependent and requires further testing and tuning.. Sigma rule by Gavin Knapp, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 7e9cf7b6-e827-11ed-a05b-0242ac120003. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_domain_google_api_non_browser_access.yml'
+    kind: bioc
+    severity: medium
+    category: network_connection
+    mitre:
+      - T1102
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.target.fqdn ~= "(?:drive\\.googleapis\\.com|oauth2\\.googleapis\\.com|sheets\\.googleapis\\.com|www\\.googleapis\\.com)" and not ((not (xdm.source.process.executable.path ~= ".") or not (xdm.source.process.executable.path ~= "."))) and not ((xdm.source.process.executable.path ~= "\\\\brave\\.exe$" or xdm.source.process.executable.path ~= "(?::\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe|:\\\\Program Files \\(x86\\)\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe)$" or (xdm.source.process.executable.path contains ":\\Program Files\\Google\\Drive File Stream\\" and xdm.source.process.executable.path ~= "\\\\GoogleDriveFS\\.exe$") or xdm.source.process.executable.path ~= "(?::\\\\Program Files\\\\Mozilla Firefox\\\\firefox\\.exe|:\\\\Program Files \\(x86\\)\\\\Mozilla Firefox\\\\firefox\\.exe)$" or xdm.source.process.executable.path ~= "(?::\\\\Program Files \\(x86\\)\\\\Internet Explorer\\\\iexplore\\.exe|:\\\\Program Files\\\\Internet Explorer\\\\iexplore\\.exe)$" or xdm.source.process.executable.path ~= "\\\\maxthon\\.exe$" or (xdm.source.process.executable.path contains ":\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\" or xdm.source.process.executable.path ~= "(?::\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe|:\\\\Program Files\\\\Microsoft\\\\Edge\\\\Application\\\\msedge\\.exe|\\\\WindowsApps\\\\MicrosoftEdge\\.exe)$") or (xdm.source.process.executable.path ~= "(?::\\\\Program Files \\(x86\\)\\\\Microsoft\\\\EdgeCore\\\\|:\\\\Program Files\\\\Microsoft\\\\EdgeCore\\\\)" and xdm.source.process.executable.path ~= "(?:\\\\msedge\\.exe|\\\\msedgewebview2\\.exe)$") or xdm.source.process.executable.path ~= "\\\\opera\\.exe$" or xdm.source.process.executable.path ~= "\\\\safari\\.exe$" or xdm.source.process.executable.path ~= "\\\\seamonkey\\.exe$" or xdm.source.process.executable.path ~= "\\\\vivaldi\\.exe$" or xdm.source.process.executable.path ~= "\\\\whale\\.exe$" or xdm.source.process.executable.path ~= "\\\\GoogleUpdate\\.exe$" or xdm.source.process.executable.path ~= "\\\\outlook\\.exe$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: suspicious-wordpad-outbound-connection-786cdae8
+    name: Suspicious Wordpad Outbound Connections
+    description: |-
+      Detects a network connection initiated by "wordpad.exe" over uncommon destination ports.
+      This might indicate potential process injection activity from a beacon or similar mechanisms. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Other ports can be used, apply additional filters accordingly. Sigma rule by X__Junior (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 786cdae8-fefb-4eb2-9227-04e34060db01. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_wordpad_uncommon_ports.yml
+    kind: bioc
+    severity: medium
+    category: network_connection
+    mitre: []
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and ((xdm.network.direction = "OUTBOUND" and xdm.source.process.executable.path ~= "\\\\wordpad\\.exe$") and not (xdm.target.port ~= "^(?:80|139|443|445|465|587|993|995)$"))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: uncommon-network-connection-initiated-0dba975d
+    name: Uncommon Network Connection Initiated By Certutil.EXE
+    description: |-
+      Detects a network connection initiated by the certutil.exe utility.
+      Attackers can abuse the utility in order to download malware or additional payloads. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Unknown. Sigma rule by frack113, Florian Roth (Nextron Systems), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id 0dba975d-a193-4ed1-a067-424df57570d1. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_certutil_initiated_connection.yml
+    kind: bioc
+    severity: high
+    category: network_connection
+    mitre:
+      - T1105
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.source.process.executable.path ~= "\\\\certutil\\.exe$" and xdm.network.direction = "OUTBOUND" and xdm.target.port ~= "^(?:80|135|443|445)$")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: uncommon-outbound-kerberos-connection-e54979bd
+    name: Uncommon Outbound Kerberos Connection
+    description: "Detects uncommon outbound network activity via Kerberos default port indicating possible lateral movement or first stage PrivEsc via delegation. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Web Browsers and third party application might generate similar activity. An initial baseline is required.. Sigma rule by Ilyas Ochkov, oscd.community, from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id e54979bd-c5f9-4d6c-967b-a04b19ac4c74. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_susp_outbound_kerberos_connection.yml"
+    kind: bioc
+    severity: medium
+    category: network_connection
+    mitre:
+      - T1558
+      - T1550.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and ((xdm.target.port ~= "^88$" and xdm.network.direction = "OUTBOUND") and not (xdm.source.process.executable.path ~= "^C:\\\\Windows\\\\System32\\\\lsass\\.exe$") and not ((xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe|C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome\\.exe)$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files \\(x86\\)\\\\Mozilla Firefox\\\\firefox\\.exe|C:\\\\Program Files\\\\Mozilla Firefox\\\\firefox\\.exe)$" or xdm.source.process.executable.path ~= "\\\\tomcat\\\\bin\\\\tomcat8\\.exe$" or xdm.source.process.executable.path ~= "^(?:C:\\\\Program Files\\\\Zscaler\\\\ZSATunnel\\\\ZSATunnel\\.exe|C:\\\\Program Files \\(x86\\)\\\\Zscaler\\\\ZSATunnel\\\\ZSATunnel\\.exe)$")))
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: remote-access-tool-anydesk-incoming-co-d58ba5c6
+    name: Remote Access Tool - AnyDesk Incoming Connection
+    description: "Detects incoming connections to AnyDesk. This could indicate a potential remote attacker trying to connect to a listening instance of AnyDesk and use it as potential command and control channel. Needs: Sysmon (Microsoft-Windows-Sysmon/Operational) forwarded to ASIX (event 3). Known false positives: Legitimate incoming connections (e.g. sysadmin activity). Most of the time I would expect outgoing connections (initiated locally).. Sigma rule by @d4ns4n_ (Wuerth-Phoenix), from SigmaHQ (Detection Rule License 1.1), converted for ASIX. Sigma id d58ba5c6-0ed7-4b9d-a433-6878379efda9. https://github.com/SigmaHQ/sigma/blob/698f0912f571d5fac3bf8c51f5421139834a011c/rules/windows/network_connection/net_connection_win_remote_access_tools_anydesk_incoming_connection.yml"
+    kind: bioc
+    severity: medium
+    category: Persistence
+    mitre:
+      - T1219.002
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "network_connection" and (xdm.source.process.executable.path ~= "(?:\\\\AnyDesk\\.exe|\\\\AnyDeskMSI\\.exe)$" and xdm.network.direction = "INBOUND")
+      group_by: field:xdm.source.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 2026.1118.0
+    released: 2026-11-18
+    notes: Converted from the SigmaHQ rules at 698f0912f571d5fac3bf8c51f5421139834a011c.

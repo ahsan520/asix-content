@@ -1,0 +1,192 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: home-linux
+name: Home Linux server
+description: "SSH and sudo watching for a Linux machine at home: logins from the internet, password logins, guessing of usernames, root attempts, and a few risky commands."
+version: 1.0.0
+audience: residential
+publisher:
+  name: ASIX
+certification: certified
+supported_by: asix
+tags:
+  - linux
+  - home
+sources:
+  - Linux syslog (sshd, sudo, cron)
+rules:
+  - key: ssh-login-external
+    name: SSH login from the internet
+    description: A successful SSH login from a public address. If the machine is only used on your home network, this is unexpected.
+    kind: bioc
+    severity: high
+    category: Initial Access
+    mitre:
+      - T1078
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "authentication" and xdm.event.outcome = XDM_CONST.OUTCOME_SUCCESS and xdm.source.ipv4 != null and not xdm.source.ipv4 ~= "^(10\\.|127\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.|169\\.254\\.)"
+      event_type: event_log
+      group_by: field:xdm.source.ipv4
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: ssh-password-login
+    name: SSH login with a password
+    description: A successful SSH login using a password instead of a key. Useful if you meant to allow keys only.
+    kind: bioc
+    severity: low
+    category: Initial Access
+    mitre:
+      - T1078
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "authentication" and xdm.event.outcome = XDM_CONST.OUTCOME_SUCCESS and xdm.auth.auth_method = "password"
+      event_type: event_log
+      group_by: field:xdm.target.host.hostname
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: ssh-username-guessing
+    name: SSH username guessing
+    description: Many attempts with usernames that do not exist, from one address. Typical of an internet scanner.
+    kind: correlation
+    severity: medium
+    category: Credential Access
+    mitre:
+      - T1110
+    definition:
+      regex: (Invalid user|Failed password for invalid user)
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: source_ip
+      threshold: 5
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: ssh-root-failures
+    name: Repeated failed root logins over SSH
+    description: Three or more failed logins as root from one address within 10 minutes.
+    kind: correlation
+    severity: medium
+    category: Credential Access
+    mitre:
+      - T1110.001
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "authentication" and xdm.event.outcome = XDM_CONST.OUTCOME_FAILED and xdm.target.user.username = "root" and xdm.source.ipv4 != null
+      event_type: event_log
+      group_by: field:xdm.source.ipv4
+      threshold: 3
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+  - key: sudo-failures
+    name: Repeated failed sudo attempts
+    description: Three or more failed sudo attempts on one host within 10 minutes.
+    kind: correlation
+    severity: medium
+    category: Privilege Escalation
+    mitre:
+      - T1548.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.type = "privilege_use" and xdm.event.outcome = XDM_CONST.OUTCOME_FAILED
+      event_type: event_log
+      group_by: field:xdm.target.host.hostname
+      threshold: 3
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+  - key: download-pipe-shell
+    name: Download piped straight into a shell
+    description: curl or wget output piped into sh or bash, the usual one-line installer pattern (and a common attack pattern).
+    kind: bioc
+    severity: medium
+    category: Execution
+    mitre:
+      - T1105
+      - T1059.004
+    definition:
+      regex: (curl|wget) [^|;]*\| *(sudo )?(ba|z|da)?sh( |$)
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+  - key: authorized-keys-edit
+    name: SSH authorized_keys changed from the command line
+    description: A command that appends to or overwrites an authorized_keys file, which gives someone permanent SSH access.
+    kind: bioc
+    severity: high
+    category: Persistence
+    mitre:
+      - T1098.004
+    definition:
+      regex: (>>?|tee( -a)?) *[^ ]*\.ssh/authorized_keys
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+  - key: fail2ban-ban
+    name: fail2ban banned an address
+    description: "fail2ban blocked a source after repeated failures. Informational: it shows the machine is being probed."
+    kind: bioc
+    severity: low
+    category: Credential Access
+    mitre:
+      - T1110
+    definition:
+      regex: fail2ban.*\] Ban
+      source_type: ""
+      filters: []
+      xql: ""
+      group_by: host
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: false
+        minutes: 60
+history:
+  - version: 1.0.0
+    notes: First release.

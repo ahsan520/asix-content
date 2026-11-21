@@ -1,0 +1,213 @@
+# ASIX content pack. Check it with: node scripts/pack-tool.js check <folder>
+id: azure-activity
+name: Azure Activity Log
+description: Reads the Azure Activity Log (administrative operations on subscriptions and resources) into the ASIX data model and watches for role assignments, network security rule changes, diagnostic settings removed, resource group deletion and refused operations.
+version: 1.0.0
+audience: enterprise
+publisher:
+  name: ASIX
+certification: community
+supported_by: community
+tags:
+  - azure
+  - activity-log
+  - cloud
+  - rbac
+sources:
+  - Azure Monitor diagnostic setting on the subscription (Activity log, Administrative category) streamed to an Event Hub
+collection:
+  summary: ASIX can read the Azure Activity Log of a subscription itself (Settings, Cloud sources). If you would rather push the records, send each one to the ASIX HTTP ingestion endpoint with anything that can post JSON (an Azure Function triggered by an Event Hub, Vector, a script).
+  steps:
+    - In Entra ID, register an application and create a client secret, then give it the Reader role on the subscription (Access control, Role assignments).
+    - In ASIX, open Settings, Integrations and add a "Microsoft cloud (Entra app registration)" with the directory (tenant) id, the application (client) id and the secret.
+    - Open Settings, Cloud sources and add "Azure Activity Log (subscription)" with that account and the subscription id. ASIX keeps only finished operations (succeeded or failed) and reshapes them to what this pack reads.
+    - Install the parser and rules of this pack here. Parsed events are stored in the dataset azure_activity. Press Read now, then use Search with dataset = azure_activity.
+    - 'To push instead of pull: a diagnostic setting on the Activity log (Azure Monitor, Export Activity Logs) can send the Administrative category to an Event Hub as {"records":[ ... ]}. Post one event per record to POST /v1/ingest/http with the header Authorization: Bearer <ingestion key>, as {"message": "<the record as JSON text, unchanged>"}.'
+  example: |-
+    curl -X POST https://<your-asix-host>/v1/ingest/http \
+      -H "Authorization: Bearer asix_ik_..." -H "Content-Type: application/json" \
+      -d '[{"message": "{\"category\":\"Administrative\",\"operationName\":\"MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE\", ... }"}]'
+parsers:
+  - key: administrative
+    name: Azure Activity Log, administrative operations
+    description: Who (user principal name or application) did what to which resource, from which address, and whether it succeeded.
+    parsing: |-
+      [INGEST:vendor="microsoft", product="azure-activity", target_dataset="azure_activity", no_hit=keep, content_id="azure_activity_admin"]
+      filter _raw ~= "\"category\"\s{0,3}:\s{0,3}\"(Administrative)\"" and _raw ~= "\"resultType\"\s{0,3}:\s{0,3}\"(Success|Failure)\""
+      | alter
+          event_category = "cloud_api",
+          _time = arrayindex(regextract(_raw, "\"time\"\s{0,3}:\s{0,3}\"([^\"]{1,40})\""), 0),
+          az_operation = arrayindex(regextract(_raw, "\"operationName\"\s{0,3}:\s{0,3}\"([^\"]{1,150})\""), 0),
+          az_result = arrayindex(regextract(_raw, "\"resultType\"\s{0,3}:\s{0,3}\"(Success|Failure)\""), 0),
+          az_status = arrayindex(regextract(_raw, "\"resultSignature\"\s{0,3}:\s{0,3}\"([^\"]{1,80})\""), 0),
+          src_ip = arrayindex(regextract(_raw, "\"callerIpAddress\"\s{0,3}:\s{0,3}\"([^\"]{1,60})\""), 0),
+          caller = coalesce(arrayindex(regextract(_raw, "\"caller\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0), arrayindex(regextract(_raw, "claims/upn\"\s{0,3}:\s{0,3}\"([^\"]{1,100})\""), 0), arrayindex(regextract(_raw, "\"appid\"\s{0,3}:\s{0,3}\"([^\"]{1,60})\""), 0)),
+          az_resource = arrayindex(regextract(_raw, "\"resourceId\"\s{0,3}:\s{0,3}\"([^\"]{1,250})\""), 0);
+    model: |-
+      [MODEL: dataset=azure_activity]
+      filter _content_id = "azure_activity_admin"
+      | alter
+          xdm.event.type = "cloud_api",
+          xdm.event.original_event_type = "azure-activity",
+          xdm.event.operation = uppercase(az_operation),
+          xdm.event.outcome = if(az_result = "Success", XDM_CONST.OUTCOME_SUCCESS, XDM_CONST.OUTCOME_FAILED),
+          xdm.event.outcome_reason = az_status,
+          xdm.event.description = concat("Azure ", uppercase(az_operation), " by ", caller, " (", lowercase(az_result), ")"),
+          xdm.source.ipv4 = if(src_ip contains ":", null, src_ip),
+          xdm.source.ipv6 = if(src_ip contains ":", src_ip, null),
+          xdm.source.user.username = caller,
+          xdm.target.service.name = az_resource;
+    samples:
+      - raw: '{"time":"2026-11-16T10:00:00.123Z","resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG1/PROVIDERS/MICROSOFT.COMPUTE/VIRTUALMACHINES/VM1","operationName":"MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE","category":"Administrative","resultType":"Success","resultSignature":"Succeeded.","callerIpAddress":"203.0.113.9","correlationId":"c1","identity":{"authorization":{"scope":"/subscriptions/0/resourceGroups/RG1","action":"MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE"},"claims":{"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn":"admin@contoso.com"}},"level":"Information","properties":{"statusCode":"Created"}}'
+        expect:
+          az_operation: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE
+          az_result: Success
+          caller: admin@contoso.com
+          src_ip: 203.0.113.9
+        xdm:
+          xdm.event.operation: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE
+          xdm.event.outcome: SUCCESS
+          xdm.source.user.username: admin@contoso.com
+          xdm.source.ipv4: 203.0.113.9
+        fires:
+          - role-assignment-changed
+      - raw: '{"time":"2026-11-16T10:00:00.123Z","resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG1/PROVIDERS/MICROSOFT.COMPUTE/VIRTUALMACHINES/VM1","operationName":"Microsoft.Network/networkSecurityGroups/securityRules/write","category":"Administrative","resultType":"Success","resultSignature":"Succeeded.","callerIpAddress":"203.0.113.9","correlationId":"c1","identity":{"authorization":{"scope":"/subscriptions/0/resourceGroups/RG1","action":"Microsoft.Network/networkSecurityGroups/securityRules/write"},"claims":{"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn":"admin@contoso.com"}},"level":"Information","properties":{"statusCode":"Created"}}'
+        expect:
+          az_operation: Microsoft.Network/networkSecurityGroups/securityRules/write
+        xdm:
+          xdm.event.operation: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE
+        fires:
+          - network-rule-changed
+      - raw: '{"time":"2026-11-16T10:00:00.123Z","resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG1/PROVIDERS/MICROSOFT.COMPUTE/VIRTUALMACHINES/VM1","operationName":"MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE","category":"Administrative","resultType":"Success","resultSignature":"Succeeded.","callerIpAddress":"203.0.113.9","correlationId":"c1","identity":{"authorization":{"scope":"/subscriptions/0/resourceGroups/RG1","action":"MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE"},"claims":{"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn":"admin@contoso.com"}},"level":"Information","properties":{"statusCode":"Created"}}'
+        expect:
+          az_operation: MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE
+        xdm:
+          xdm.event.operation: MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE
+        fires:
+          - diagnostics-removed
+      - raw: '{"time":"2026-11-16T10:00:00.123Z","resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG1/PROVIDERS/MICROSOFT.COMPUTE/VIRTUALMACHINES/VM1","operationName":"MICROSOFT.RESOURCES/SUBSCRIPTIONS/RESOURCEGROUPS/DELETE","category":"Administrative","resultType":"Success","resultSignature":"Succeeded.","callerIpAddress":"203.0.113.9","correlationId":"c1","identity":{"authorization":{"scope":"/subscriptions/0/resourceGroups/RG1","action":"MICROSOFT.RESOURCES/SUBSCRIPTIONS/RESOURCEGROUPS/DELETE"},"claims":{"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn":"admin@contoso.com"}},"level":"Information","properties":{"statusCode":"Created"}}'
+        expect:
+          az_result: Success
+        xdm:
+          xdm.event.operation: MICROSOFT.RESOURCES/SUBSCRIPTIONS/RESOURCEGROUPS/DELETE
+        fires:
+          - resource-group-deleted
+      - raw: '{"time":"2026-11-16T10:00:00.123Z","resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG1/PROVIDERS/MICROSOFT.COMPUTE/VIRTUALMACHINES/VM1","operationName":"MICROSOFT.COMPUTE/VIRTUALMACHINES/WRITE","category":"Administrative","resultType":"Failure","resultSignature":"Failed.Forbidden","callerIpAddress":"203.0.113.9","correlationId":"c1","identity":{"authorization":{"scope":"/subscriptions/0/resourceGroups/RG1","action":"MICROSOFT.COMPUTE/VIRTUALMACHINES/WRITE"},"claims":{"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn":"admin@contoso.com"}},"level":"Information","properties":{"statusCode":"Created"}}'
+        expect:
+          az_result: Failure
+          az_status: Failed.Forbidden
+        xdm:
+          xdm.event.outcome: FAILED
+          xdm.event.outcome_reason: Failed.Forbidden
+        fires:
+          - operations-refused
+rules:
+  - key: role-assignment-changed
+    name: "Azure: role assignment created or changed"
+    description: Someone was given a role on a subscription, resource group or resource (Owner, Contributor, User Access Administrator and so on). Check the role and the reason.
+    kind: bioc
+    severity: medium
+    category: Privilege Escalation
+    mitre:
+      - T1098.003
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "azure-activity" and xdm.event.outcome = "SUCCESS" and xdm.event.operation = "MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE"
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: network-rule-changed
+    name: "Azure: network security rule or firewall changed"
+    description: A network security group rule or an Azure Firewall rule collection was created, changed or deleted. Check it did not open anything to the internet.
+    kind: bioc
+    severity: medium
+    category: Defense Evasion
+    mitre:
+      - T1562.007
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "azure-activity" and xdm.event.outcome = "SUCCESS" and xdm.event.operation ~= "^MICROSOFT\\.NETWORK/(NETWORKSECURITYGROUPS/SECURITYRULES|NETWORKSECURITYGROUPS|AZUREFIREWALLS)/(WRITE|DELETE)$"
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: diagnostics-removed
+    name: "Azure: diagnostic settings deleted"
+    description: A diagnostic setting was deleted, which can stop logs reaching ASIX. Attackers do this to hide what they do next.
+    kind: bioc
+    severity: high
+    category: Defense Evasion
+    mitre:
+      - T1562.008
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "azure-activity" and xdm.event.outcome = "SUCCESS" and xdm.event.operation = "MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE"
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: resource-group-deleted
+    name: "Azure: resource group deleted"
+    description: A resource group, with everything in it, was deleted. Check it was planned.
+    kind: bioc
+    severity: medium
+    category: Impact
+    mitre:
+      - T1485
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "azure-activity" and xdm.event.outcome = "SUCCESS" and xdm.event.operation = "MICROSOFT.RESOURCES/SUBSCRIPTIONS/RESOURCEGROUPS/DELETE"
+      group_by: field:xdm.source.user.username
+      threshold: 1
+      window_minutes: 5
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 30
+  - key: operations-refused
+    name: "Azure: many refused operations by one identity"
+    description: One identity had 20 or more administrative operations refused (forbidden, unauthorized) in 10 minutes. Often someone with stolen credentials finding out what they can do.
+    kind: correlation
+    severity: medium
+    category: Discovery
+    mitre:
+      - T1580
+    definition:
+      regex: ""
+      source_type: ""
+      filters: []
+      xql: xdm.event.original_event_type = "azure-activity" and xdm.event.outcome = "FAILED" and xdm.event.outcome_reason ~= "(Forbidden|Unauthorized)"
+      group_by: field:xdm.source.user.username
+      threshold: 20
+      window_minutes: 10
+      run_every_minutes: 1
+      mode: realtime
+      suppression:
+        enabled: true
+        minutes: 60
+history:
+  - version: 1.0.0
+    released: 2026-11-16
+    notes: "First release: administrative activity parser, data model mapping, five detections."
