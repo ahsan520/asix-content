@@ -1,4 +1,5 @@
 *.pem
-index.json
-index.sig.json
+/index.json
+/index.sig.json
+/sigma/
 node_modules/
