@@ -19,7 +19,7 @@ jobs:
       # add a read-only token as the secret ASIX_REPO_TOKEN.
       - uses: actions/checkout@v4
         with:
-          repository: YOUR-ORG/ash-app-builder
+          repository: ahsan520/ash-app-builder
           token: ${{ secrets.ASIX_REPO_TOKEN || github.token }}
           path: asix
       - uses: actions/setup-node@v4
